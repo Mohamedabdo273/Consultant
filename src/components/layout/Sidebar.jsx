@@ -1,0 +1,152 @@
+import { NavLink, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard, FolderKanban, CheckSquare, FileText,
+  FileSignature, BarChart3, Clock, Upload, BrainCircuit,
+  MessageSquare, Bell, Settings, LogOut, Users, Building2,
+  ShieldCheck, ChevronLeft, ChevronRight, X, Sparkles,
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useLang } from '../../context/LangContext';
+import toast from 'react-hot-toast';
+
+const navItems = (role) => {
+  const base = [
+    { to: '/dashboard',    icon: LayoutDashboard, key: 'dashboard'   },
+    { to: '/ai-dashboard', icon: Sparkles,         key: 'aiDashboard' },
+    { to: '/projects',     icon: FolderKanban,    key: 'projects'    },
+    { to: '/tasks',       icon: CheckSquare,     key: 'tasks'     },
+    { to: '/invoices',    icon: FileText,        key: 'invoices'  },
+    { to: '/contracts',   icon: FileSignature,   key: 'contracts' },
+    { to: '/reports',     icon: BarChart3,       key: 'reports'   },
+    { to: '/time',        icon: Clock,           key: 'timeEntries'},
+    { to: '/documents',   icon: Upload,          key: 'documents' },
+    { to: '/analysis',    icon: BrainCircuit,    key: 'analysis'  },
+    { to: '/chat',        icon: MessageSquare,   key: 'chat'      },
+  ];
+
+  const adminItems = [
+    { to: '/admin/companies', icon: Building2,  key: 'company'  },
+    { to: '/admin/users',     icon: Users,      key: 'users'    },
+    { to: '/admin/settings',  icon: ShieldCheck,key: 'admin'    },
+  ];
+
+  if (['SuperAdmin', 'Admin'].includes(role)) return [...base, ...adminItems];
+  if (role === 'Client') return [
+    { to: '/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+    { to: '/projects',  icon: FolderKanban,    key: 'projects'  },
+    { to: '/invoices',  icon: FileText,        key: 'invoices'  },
+    { to: '/contracts', icon: FileSignature,   key: 'contracts' },
+    { to: '/chat',      icon: MessageSquare,   key: 'chat'      },
+  ];
+  return base;
+};
+
+export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
+  const { user, logout } = useAuth();
+  const { t, isRTL }    = useLang();
+  const navigate          = useNavigate();
+
+  const items = navItems(user?.role);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+    toast.success(t('logout'));
+  };
+
+  const sidebarClass = `
+    fixed top-0 ${isRTL ? 'right-0' : 'left-0'} h-full z-40
+    bg-white border-${isRTL ? 'l' : 'r'} border-gray-200
+    flex flex-col transition-all duration-300 ease-in-out
+    ${collapsed ? 'w-16' : 'w-[260px]'}
+    ${mobileOpen ? 'translate-x-0' : isRTL ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0'}
+  `;
+
+  return (
+    <>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
+      <aside className={sidebarClass}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 h-16 border-b border-gray-100">
+          {!collapsed && (
+            <div className="flex items-center animate-fade-in">
+              <img src="/scg-logo.png" alt="SCG" className="h-9 w-auto object-contain" />
+            </div>
+          )}
+          {collapsed && (
+            <img src="/scg-logo.png" alt="SCG" className="w-8 h-8 object-contain mx-auto" />
+          )}
+          <div className="flex items-center gap-1">
+            {/* Mobile close */}
+            <button onClick={onMobileClose} className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+              <X size={18} />
+            </button>
+            {/* Desktop collapse */}
+            <button
+              onClick={onToggle}
+              className="hidden lg:flex p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+            >
+              {collapsed
+                ? (isRTL ? <ChevronLeft size={18}/> : <ChevronRight size={18}/>)
+                : (isRTL ? <ChevronRight size={18}/> : <ChevronLeft size={18}/>)
+              }
+            </button>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+          {items.map(({ to, icon: Icon, key }) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={onMobileClose}
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-2' : ''}`
+              }
+            >
+              <Icon size={18} className="flex-shrink-0" />
+              {!collapsed && <span className="truncate">{t(key)}</span>}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-2' : ''}`
+            }
+          >
+            <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-bold text-primary-700">
+                {user?.fullName?.[0]?.toUpperCase() || 'U'}
+              </span>
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-900 truncate">{user?.fullName}</p>
+                <p className="text-[11px] text-gray-400 truncate">{user?.role}</p>
+              </div>
+            )}
+          </NavLink>
+          <button
+            onClick={handleLogout}
+            className={`sidebar-link w-full text-red-500 hover:bg-red-50 hover:text-red-600 ${collapsed ? 'justify-center px-2' : ''}`}
+          >
+            <LogOut size={18} className="flex-shrink-0" />
+            {!collapsed && <span>{t('logout')}</span>}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
