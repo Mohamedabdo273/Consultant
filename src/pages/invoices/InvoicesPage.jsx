@@ -14,6 +14,9 @@ import {
   CheckCircle,
   AlertCircle,
   TrendingUp,
+  ThumbsUp,
+  ThumbsDown,
+  RefreshCw,
 } from 'lucide-react';
 import { invoicesApi, projectsApi, usersApi } from '../../api/index';
 import { useLang } from '../../context/LangContext';
@@ -154,12 +157,14 @@ function CreateInvoiceModal({ open, onClose }) {
 
   const onSubmit = (data) => {
     mutate({
-      projectId:    data.projectId    || undefined,
-      clientUserId: data.clientUserId || undefined,
-      currency:     data.currency     || 'EGP',
-      taxRate:      data.taxRate      ? Number(data.taxRate)  : 0,
-      dueDate:      data.dueDate      || undefined,
-      notes:        data.notes        || undefined,
+      projectId:         data.projectId         || undefined,
+      clientUserId:      data.clientUserId       || undefined,
+      currency:          data.currency           || 'EGP',
+      taxRate:           data.taxRate            ? Number(data.taxRate) : 0,
+      dueDate:           data.dueDate            || undefined,
+      notes:             data.notes              || undefined,
+      isRecurring:       !!data.isRecurring,
+      recurringInterval: data.recurringInterval  || undefined,
       items: [{
         description: data.itemDescription || 'خدمة استشارية',
         quantity:    1,
@@ -254,6 +259,25 @@ function CreateInvoiceModal({ open, onClose }) {
             {...register('notes')}
           />
         </FormField>
+
+        {/* Recurring */}
+        <div className="border border-gray-100 rounded-xl p-4 space-y-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" className="rounded" {...register('isRecurring')} />
+            <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+              <RefreshCw size={14} className="text-blue-500" />
+              {lang === 'ar' ? 'فاتورة متكررة' : 'Recurring Invoice'}
+            </span>
+          </label>
+          <FormField label={lang === 'ar' ? 'التكرار' : 'Interval'}>
+            <select className="input" {...register('recurringInterval')}>
+              <option value="">{lang === 'ar' ? '-- غير متكرر --' : '-- None --'}</option>
+              <option value="Monthly">{lang === 'ar' ? 'شهري' : 'Monthly'}</option>
+              <option value="Quarterly">{lang === 'ar' ? 'ربع سنوي' : 'Quarterly'}</option>
+              <option value="Yearly">{lang === 'ar' ? 'سنوي' : 'Yearly'}</option>
+            </select>
+          </FormField>
+        </div>
 
         <div className="flex justify-end gap-3 pt-2">
           <button
@@ -399,6 +423,18 @@ export default function InvoicesPage() {
           (lang === 'ar' ? 'فشل إرسال الفاتورة' : 'Failed to send invoice')
       );
     },
+  });
+
+  const { mutate: approveInvoice } = useMutation({
+    mutationFn: (id) => invoicesApi.approve(id),
+    onSuccess: () => { toast.success(lang === 'ar' ? 'تمت الموافقة على الفاتورة' : 'Invoice approved'); queryClient.invalidateQueries({ queryKey: ['invoices'] }); },
+    onError: (err) => toast.error(err?.response?.data?.message ?? 'خطأ'),
+  });
+
+  const { mutate: rejectInvoice } = useMutation({
+    mutationFn: (id) => invoicesApi.reject(id, { note: 'مرفوضة' }),
+    onSuccess: () => { toast.success(lang === 'ar' ? 'تم رفض الفاتورة' : 'Invoice rejected'); queryClient.invalidateQueries({ queryKey: ['invoices'] }); },
+    onError: (err) => toast.error(err?.response?.data?.message ?? 'خطأ'),
   });
 
   const { mutate: deleteInvoice, isPending: isDeleting } = useMutation({
@@ -590,6 +626,31 @@ export default function InvoicesPage() {
                       >
                         <CreditCard size={15} />
                       </button>
+                    )}
+                    {/* Approval Workflow */}
+                    {isAdmin && invoice.approvalStatus === 'Pending' && (
+                      <>
+                        <button
+                          onClick={() => approveInvoice(invoice.id)}
+                          className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
+                          title={lang === 'ar' ? 'موافقة' : 'Approve'}
+                        >
+                          <ThumbsUp size={15} />
+                        </button>
+                        <button
+                          onClick={() => { if (confirm(lang === 'ar' ? 'رفض الفاتورة؟' : 'Reject invoice?')) rejectInvoice(invoice.id); }}
+                          className="p-1.5 rounded-lg hover:bg-orange-50 text-gray-400 hover:text-orange-600 transition-colors"
+                          title={lang === 'ar' ? 'رفض' : 'Reject'}
+                        >
+                          <ThumbsDown size={15} />
+                        </button>
+                      </>
+                    )}
+                    {/* Recurring badge */}
+                    {invoice.isRecurring && (
+                      <span title={`Recurring: ${invoice.recurringInterval}`}>
+                        <RefreshCw size={13} className="text-blue-400" />
+                      </span>
                     )}
                     {isAdmin && (
                       <button

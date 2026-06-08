@@ -4,6 +4,7 @@ import {
   FileSignature, BarChart3, Clock, Upload, BrainCircuit,
   MessageSquare, Bell, Settings, LogOut, Users, Building2,
   ShieldCheck, ChevronLeft, ChevronRight, X, Sparkles,
+  Target, UserCircle, Mail, ShieldAlert, TrendingUp, HeartHandshake, Banknote,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
@@ -22,21 +23,28 @@ const navItems = (role) => {
     { to: '/documents',   icon: Upload,          key: 'documents' },
     { to: '/analysis',    icon: BrainCircuit,    key: 'analysis'  },
     { to: '/chat',        icon: MessageSquare,   key: 'chat'      },
+    { to: '/milestones',  icon: Target,          key: 'milestones'},
+    { to: '/risks',       icon: ShieldAlert,     key: 'risks'     },
+    { to: '/bi',          icon: TrendingUp,      key: 'businessIntelligence' },
+    { to: '/crm',         icon: HeartHandshake,  key: 'crm'       },
+    { to: '/cashflow',    icon: Banknote,        key: 'cashFlow'  },
   ];
 
   const adminItems = [
-    { to: '/admin/companies', icon: Building2,  key: 'company'  },
-    { to: '/admin/users',     icon: Users,      key: 'users'    },
-    { to: '/admin/settings',  icon: ShieldCheck,key: 'admin'    },
+    { to: '/admin/companies',          icon: Building2,   key: 'company'        },
+    { to: '/admin/users',              icon: Users,       key: 'users'          },
+    { to: '/settings/email-templates', icon: Mail,        key: 'emailTemplates' },
+    { to: '/admin/settings',           icon: ShieldCheck, key: 'admin'          },
   ];
 
   if (['SuperAdmin', 'Admin'].includes(role)) return [...base, ...adminItems];
   if (role === 'Client') return [
-    { to: '/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-    { to: '/projects',  icon: FolderKanban,    key: 'projects'  },
-    { to: '/invoices',  icon: FileText,        key: 'invoices'  },
-    { to: '/contracts', icon: FileSignature,   key: 'contracts' },
-    { to: '/chat',      icon: MessageSquare,   key: 'chat'      },
+    { to: '/dashboard',    icon: LayoutDashboard, key: 'dashboard'    },
+    { to: '/client-portal',icon: UserCircle,      key: 'clientPortal' },
+    { to: '/projects',     icon: FolderKanban,    key: 'projects'     },
+    { to: '/invoices',     icon: FileText,        key: 'invoices'     },
+    { to: '/contracts',    icon: FileSignature,   key: 'contracts'    },
+    { to: '/chat',         icon: MessageSquare,   key: 'chat'         },
   ];
   return base;
 };

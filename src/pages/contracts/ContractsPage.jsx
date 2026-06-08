@@ -11,6 +11,8 @@ import {
   Calendar,
   DollarSign,
   ShieldCheck,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 import { contractsApi, projectsApi, usersApi } from '../../api/index';
 import { useLang } from '../../context/LangContext';
@@ -362,6 +364,18 @@ export default function ContractsPage() {
   const contracts = data?.items ?? data?.contracts ?? data?.data ?? [];
   const totalPages = data?.totalPages ?? Math.ceil((data?.totalCount ?? 0) / PAGE_SIZE) ?? 1;
 
+  const { mutate: approveContract } = useMutation({
+    mutationFn: (id) => contractsApi.approve(id),
+    onSuccess: () => { toast.success(lang === 'ar' ? 'تمت الموافقة على العقد' : 'Contract approved'); queryClient.invalidateQueries({ queryKey: ['contracts'] }); },
+    onError: (err) => toast.error(err?.response?.data?.message ?? 'خطأ'),
+  });
+
+  const { mutate: rejectContract } = useMutation({
+    mutationFn: (id) => contractsApi.reject(id, { note: 'مرفوض' }),
+    onSuccess: () => { toast.success(lang === 'ar' ? 'تم رفض العقد' : 'Contract rejected'); queryClient.invalidateQueries({ queryKey: ['contracts'] }); },
+    onError: (err) => toast.error(err?.response?.data?.message ?? 'خطأ'),
+  });
+
   const { mutate: deleteContract, isPending: isDeleting } = useMutation({
     mutationFn: (id) => contractsApi.delete(id),
     onSuccess: () => {
@@ -515,6 +529,25 @@ export default function ContractsPage() {
                       >
                         <PenLine size={15} />
                       </button>
+                    )}
+                    {/* Approval */}
+                    {isAdmin && contract.approvalStatus === 'Pending' && (
+                      <>
+                        <button
+                          onClick={() => approveContract(contract.id)}
+                          className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
+                          title={lang === 'ar' ? 'موافقة' : 'Approve'}
+                        >
+                          <ThumbsUp size={15} />
+                        </button>
+                        <button
+                          onClick={() => { if (confirm(lang === 'ar' ? 'رفض العقد؟' : 'Reject contract?')) rejectContract(contract.id); }}
+                          className="p-1.5 rounded-lg hover:bg-orange-50 text-gray-400 hover:text-orange-600 transition-colors"
+                          title={lang === 'ar' ? 'رفض' : 'Reject'}
+                        >
+                          <ThumbsDown size={15} />
+                        </button>
+                      </>
                     )}
                     {isAdmin && (
                       <button

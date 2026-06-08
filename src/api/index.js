@@ -63,6 +63,8 @@ export const invoicesApi = {
   send:        (id)       => api.post(`/invoices/${id}/send`),
   recordPayment: (id, data) => api.post(`/invoices/${id}/payments`, data),
   exportPdf:   (id)       => api.get(`/invoices/${id}/export/pdf`, { responseType: 'blob' }),
+  approve:     (id)       => api.post(`/invoices/${id}/approve`),
+  reject:      (id, data) => api.post(`/invoices/${id}/reject`, data),
 };
 
 // ── Contracts ───────────────────────────────────────────────────────────────
@@ -83,6 +85,8 @@ export const contractsApi = {
   sendToClient: (id)       => api.post(`/contracts/${id}/send`),
   sign:         (id, data) => api.post(`/contracts/${id}/sign`, data),
   exportPdf:    (id)       => api.get(`/contracts/${id}/export/pdf`, { responseType: 'blob' }),
+  approve:      (id)       => api.post(`/contracts/${id}/approve`),
+  reject:       (id, data) => api.post(`/contracts/${id}/reject`, data),
 };
 
 // ── Reports ─────────────────────────────────────────────────────────────────
@@ -195,7 +199,7 @@ export const documentsApi = {
 // POST   /analysis/competitor            → competitor analysis
 // POST   /analysis/schedule/weekly       → schedule weekly auto-analysis
 export const analysisApi = {
-  analyzeAll:     ()     => api.post('/analysis/company/analyze'),
+  analyzeAll:     (intake) => api.post('/analysis/company/analyze', intake ?? null),
   getLatest:      ()     => api.get('/analysis/company/latest'),
   getHistory:     ()     => api.get('/analysis/company/history'),
   getById:        (id)   => api.get(`/analysis/${id}`),
@@ -306,6 +310,59 @@ export const attachmentsApi = {
   delete:      (id) => api.delete(`/attachments/${id}`),
 };
 
+// ── Milestones ────────────────────────────────────────────────────────────────
+// GET    /projects/{projectId}/milestones   → list
+// GET    /milestones/{id}                   → detail
+// POST   /milestones                        → create (AdminOnly)
+// PUT    /milestones/{id}                   → update (AdminOnly)
+// DELETE /milestones/{id}                   → delete (AdminOnly)
+// PATCH  /milestones/{id}/complete          → mark complete (AdminOnly)
+export const milestonesApi = {
+  getByProject: (projectId)   => api.get(`/projects/${projectId}/milestones`),
+  getById:      (id)          => api.get(`/milestones/${id}`),
+  create:       (data)        => api.post('/milestones', data),
+  update:       (id, data)    => api.put(`/milestones/${id}`, data),
+  delete:       (id)          => api.delete(`/milestones/${id}`),
+  complete:     (id)          => api.patch(`/milestones/${id}/complete`),
+};
+
+// ── Email Templates ───────────────────────────────────────────────────────────
+// GET    /email-templates                   → list
+// GET    /email-templates/{id}              → detail
+// POST   /email-templates                   → create (AdminOnly)
+// PUT    /email-templates/{id}              → update (AdminOnly)
+// DELETE /email-templates/{id}              → delete (AdminOnly)
+export const emailTemplatesApi = {
+  getAll:  (params)   => api.get('/email-templates', { params }),
+  getById: (id)       => api.get(`/email-templates/${id}`),
+  create:  (data)     => api.post('/email-templates', data),
+  update:  (id, data) => api.put(`/email-templates/${id}`, data),
+  delete:  (id)       => api.delete(`/email-templates/${id}`),
+};
+
+// ── Project Budget ────────────────────────────────────────────────────────────
+// GET /projects/{id}/budget
+export const budgetApi = {
+  getBudget: (projectId) => api.get(`/projects/${projectId}/budget`),
+};
+
+// ── Task Dependencies ─────────────────────────────────────────────────────────
+// POST   /tasks/{id}/dependencies           → add dependency  { dependsOnTaskId }
+// DELETE /tasks/{id}/dependencies/{depId}   → remove dependency
+export const taskDepsApi = {
+  add:    (taskId, data)        => api.post(`/tasks/${taskId}/dependencies`, data),
+  remove: (taskId, depId)       => api.delete(`/tasks/${taskId}/dependencies/${depId}`),
+};
+
+// ── Invoices Approval + Recurring ─────────────────────────────────────────────
+// POST /invoices/{id}/approve
+// POST /invoices/{id}/reject  { note? }
+// (Recurring fields are sent in create/update body: isRecurring, recurringInterval)
+
+// ── Contracts Approval ────────────────────────────────────────────────────────
+// POST /contracts/{id}/approve
+// POST /contracts/{id}/reject  { note? }
+
 // ── Search ───────────────────────────────────────────────────────────────────
 // GET /search?q=...&type=Project|Task|Report|Contract|Invoice&limit=20
 export const searchApi = {
@@ -352,4 +409,38 @@ export const adminApi = {
   activateUser:         (id)      => api.put(`/admin/users/${id}/activate`),
   deactivateUser:       (id)      => api.put(`/admin/users/${id}/deactivate`),
   resetPassword:        (id, d)   => api.put(`/admin/users/${id}/reset-password`, d),
+};
+
+// ── Risks ─────────────────────────────────────────────────────────────────────
+export const risksApi = {
+  getDashboard:    ()        => api.get('/risks/dashboard'),
+  getMatrix:       ()        => api.get('/risks/matrix'),
+  getEarlyWarnings:()        => api.get('/risks/early-warnings'),
+  getAll:          (params)  => api.get('/risks', { params }),
+  getById:         (id)      => api.get(`/risks/${id}`),
+  create:          (data)    => api.post('/risks', data),
+  update:          (id, data)=> api.put(`/risks/${id}`, data),
+  delete:          (id)      => api.delete(`/risks/${id}`),
+  assess:          (id)      => api.post(`/risks/${id}/assess`),
+  getDecisionSupport:(id)    => api.get(`/risks/${id}/decision-support`),
+};
+
+// ── Business Intelligence ─────────────────────────────────────────────────────
+export const biApi = {
+  analyzeOpportunities: (data) => api.post('/bi/opportunities', data),
+  generateStrategicPlan:(data) => api.post('/bi/strategic-plan', data),
+  analyzeInvestment:    (data) => api.post('/bi/investment', data),
+  analyzeMarket:        (data) => api.post('/bi/market', data),
+};
+
+// ── CRM ───────────────────────────────────────────────────────────────────────
+export const crmApi = {
+  getDashboard:        ()            => api.get('/crm/dashboard'),
+  getClients:          ()            => api.get('/crm/clients'),
+  getClientProfile:    (id)          => api.get(`/crm/clients/${id}`),
+  getAiInsights:       ()            => api.get('/crm/insights'),
+  getClientInsight:    (id)          => api.get(`/crm/clients/${id}/insight`),
+  getInteractions:     (clientId)    => api.get(`/crm/clients/${clientId}/interactions`),
+  addInteraction:      (data)        => api.post('/crm/interactions', data),
+  deleteInteraction:   (id)          => api.delete(`/crm/interactions/${id}`),
 };

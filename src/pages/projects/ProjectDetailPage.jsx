@@ -23,7 +23,7 @@ import {
   AlertCircle,
   Pencil,
 } from 'lucide-react';
-import { projectsApi, tasksApi, usersApi } from '../../api/index';
+import { projectsApi, tasksApi, usersApi, budgetApi } from '../../api/index';
 import { useLang } from '../../context/LangContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -723,6 +723,9 @@ export default function ProjectDetailPage() {
                     />
                   </div>
 
+                  {/* Budget Tracking Widget */}
+                  <BudgetWidget projectId={id} lang={lang} currency={project?.currency} />
+
                   {/* Progress Bar */}
                   {statsData.completionRate != null && (
                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
@@ -774,6 +777,63 @@ export default function ProjectDetailPage() {
             : `Remove "${removeMemberTarget?.fullName ?? removeMemberTarget?.name ?? 'this member'}" from the project?`
         }
       />
+    </div>
+  );
+}
+
+// ── Budget Tracking Widget ─────────────────────────────────────────────────────
+function BudgetWidget({ projectId, lang, currency = 'EGP' }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['budget', projectId],
+    queryFn: () => budgetApi.getBudget(projectId),
+    enabled: !!projectId,
+    staleTime: 60_000,
+  });
+
+  const budget = data?.data?.data ?? data?.data ?? null;
+  if (isLoading || !budget) return null;
+
+  const planned  = budget.plannedBudget  ?? budget.budget  ?? 0;
+  const actual   = budget.actualCost     ?? budget.spent   ?? 0;
+  const pct      = planned > 0 ? Math.min(Math.round((actual / planned) * 100), 200) : 0;
+  const overBudget = actual > planned;
+
+  const fmt = (v) => new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: 0 }).format(v);
+
+  return (
+    <div className={`p-4 rounded-xl border ${overBudget ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+          <DollarSign size={14} />
+          {lang === 'ar' ? 'تتبع الميزانية' : 'Budget Tracking'}
+        </span>
+        {overBudget && (
+          <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+            {lang === 'ar' ? '⚠ تجاوز الميزانية!' : '⚠ Over Budget!'}
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-3 mb-3 text-center">
+        <div>
+          <p className="text-xs text-gray-500">{lang === 'ar' ? 'المخطط' : 'Planned'}</p>
+          <p className="text-sm font-bold text-gray-800">{fmt(planned)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">{lang === 'ar' ? 'الفعلي' : 'Actual'}</p>
+          <p className={`text-sm font-bold ${overBudget ? 'text-red-700' : 'text-green-700'}`}>{fmt(actual)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">{lang === 'ar' ? 'المتبقي' : 'Remaining'}</p>
+          <p className={`text-sm font-bold ${overBudget ? 'text-red-700' : 'text-blue-700'}`}>{fmt(planned - actual)}</p>
+        </div>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div
+          className={`h-2 rounded-full transition-all ${overBudget ? 'bg-red-500' : pct > 75 ? 'bg-yellow-500' : 'bg-green-500'}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
+      </div>
+      <p className="text-xs text-gray-500 mt-1 text-end">{pct}% {lang === 'ar' ? 'مستخدم' : 'used'}</p>
     </div>
   );
 }

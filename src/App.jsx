@@ -30,6 +30,17 @@ import SearchPage       from './pages/search/SearchPage';
 import CompanyPage      from './pages/company/CompanyPage';
 import AiDashboardPage  from './pages/ai-dashboard/AiDashboardPage';
 
+// New Enterprise pages
+import ClientPortalPage   from './pages/client/ClientPortalPage';
+import MilestonesPage     from './pages/milestones/MilestonesPage';
+import EmailTemplatesPage from './pages/settings/EmailTemplatesPage';
+
+// New modules
+import RisksPage                from './pages/risks/RisksPage';
+import BusinessIntelligencePage from './pages/bi/BusinessIntelligencePage';
+import CrmPage                  from './pages/crm/CrmPage';
+import CashFlowPage             from './pages/cashflow/CashFlowPage';
+
 // Admin pages
 import CompaniesPage    from './pages/admin/CompaniesPage';
 import UsersPage        from './pages/admin/UsersPage';
@@ -71,6 +82,25 @@ export default function App() {
         <Route path="/profile"        element={<ProfilePage />} />
         <Route path="/search"         element={<SearchPage />} />
         <Route path="/company"        element={<CompanyPage />} />
+
+        {/* ── New Module Routes ──────────────────────────── */}
+        <Route path="/risks" element={<RisksPage />} />
+        <Route path="/bi"    element={<BusinessIntelligencePage />} />
+        <Route path="/crm"   element={
+          <RoleGuard allowedRoles={['Admin','SuperAdmin']}>
+            <CrmPage />
+          </RoleGuard>
+        } />
+        <Route path="/cashflow" element={<CashFlowPage />} />
+
+        {/* ── Enterprise Feature Routes ──────────────────── */}
+        <Route path="/client-portal"    element={<ClientPortalPage />} />
+        <Route path="/milestones"       element={<MilestonesPage />} />
+        <Route path="/settings/email-templates" element={
+          <RoleGuard allowedRoles={['Admin', 'SuperAdmin']}>
+            <EmailTemplatesPage />
+          </RoleGuard>
+        } />
 
         {/* ── Admin-only routes ──────────────────────────── */}
         <Route path="/admin/companies" element={

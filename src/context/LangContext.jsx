@@ -11,6 +11,8 @@ const translations = {
     chat: 'المساعد الذكي', notifications: 'الإشعارات', settings: 'الإعدادات',
     profile: 'الملف الشخصي', logout: 'تسجيل الخروج', admin: 'الإدارة',
     users: 'المستخدمين', company: 'الشركة',
+    milestones: 'المراحل', clientPortal: 'بوابة العميل', emailTemplates: 'قوالب الإيميل',
+    risks: 'إدارة المخاطر', businessIntelligence: 'ذكاء الأعمال', crm: 'إدارة العملاء', cashFlow: 'التدفق النقدي',
     // Common
     save: 'حفظ', cancel: 'إلغاء', delete: 'حذف', edit: 'تعديل',
     add: 'إضافة', search: 'بحث', filter: 'تصفية', loading: 'جار التحميل...',
@@ -39,6 +41,8 @@ const translations = {
     chat: 'AI Assistant', notifications: 'Notifications', settings: 'Settings',
     profile: 'Profile', logout: 'Logout', admin: 'Administration',
     users: 'Users', company: 'Company',
+    milestones: 'Milestones', clientPortal: 'Client Portal', emailTemplates: 'Email Templates',
+    risks: 'Risk Management', businessIntelligence: 'Business Intelligence', crm: 'CRM', cashFlow: 'Cash Flow',
     // Common
     save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit',
     add: 'Add', search: 'Search', filter: 'Filter', loading: 'Loading...',

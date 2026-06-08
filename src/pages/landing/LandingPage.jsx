@@ -207,7 +207,7 @@ export default function LandingPage() {
     setMessages((prev) => [...prev, { role: 'bot', text: getDemoResponse(trimmed, lang) }]);
   }, [inputVal, isTyping, lang]);
 
-  // Scroll-reveal for cards
+  // Scroll-reveal for cards — re-observe whenever lang changes (new DOM nodes after re-render)
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('visible'); }),
@@ -215,7 +215,7 @@ export default function LandingPage() {
     );
     document.querySelectorAll('.lp-service-card, .lp-why-card').forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [lang]);
 
   const scrollToChat = () => {
     chatSectionRef.current?.scrollIntoView({ behavior: 'smooth' });

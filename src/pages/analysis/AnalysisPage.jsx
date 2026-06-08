@@ -70,8 +70,14 @@ function CreateAnalysisModal({ open, onClose }) {
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data) => {
-      if (analysisApi.create) return analysisApi.create(data);
-      return analysisApi.analyzeAll();
+      const intake = {
+        businessActivity:  data.businessActivity  || undefined,
+        mainChallenge:     data.mainChallenge      || undefined,
+        analysisGoal:      data.analysisGoal       || undefined,
+        annualRevenueRange:data.annualRevenueRange  || undefined,
+        companyAge:        data.companyAge          || undefined,
+      };
+      return analysisApi.analyzeAll(intake);
     },
     onSuccess: () => {
       toast.success(
@@ -118,15 +124,35 @@ function CreateAnalysisModal({ open, onClose }) {
           />
         </FormField>
 
-        <FormField label={lang === 'ar' ? 'نوع التحليل' : 'Analysis Type'}>
-          <select className="input" {...register('type')}>
-            {ANALYSIS_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </FormField>
+        {/* ── SCG Intake Form ── */}
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
+            {lang === 'ar' ? 'بيانات تمهيدية (اختياري — تحسّن جودة التحليل)' : 'Intake Data (optional — improves analysis quality)'}
+          </p>
+          <FormField label={lang === 'ar' ? 'نوع النشاط' : 'Business Activity'}>
+            <input type="text" className="input" placeholder={lang === 'ar' ? 'مثال: مقاولات إنشائية، تجارة...' : 'e.g. Construction, Retail...'} {...register('businessActivity')} />
+          </FormField>
+          <FormField label={lang === 'ar' ? 'التحدي الرئيسي' : 'Main Challenge'}>
+            <input type="text" className="input" placeholder={lang === 'ar' ? 'مثال: انخفاض الأرباح، ضعف التدفق النقدي...' : 'e.g. Low margins, cash flow...'} {...register('mainChallenge')} />
+          </FormField>
+          <FormField label={lang === 'ar' ? 'هدف التحليل' : 'Analysis Goal'}>
+            <input type="text" className="input" placeholder={lang === 'ar' ? 'مثال: تحسين الكفاءة، التوسع...' : 'e.g. Improve efficiency, expand...'} {...register('analysisGoal')} />
+          </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label={lang === 'ar' ? 'نطاق الإيرادات' : 'Revenue Range'}>
+              <select className="input" {...register('annualRevenueRange')}>
+                <option value="">—</option>
+                {['أقل من مليون','1-5 مليون','5-20 مليون','20-100 مليون','أكثر من 100 مليون'].map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </FormField>
+            <FormField label={lang === 'ar' ? 'عمر الشركة' : 'Company Age'}>
+              <select className="input" {...register('companyAge')}>
+                <option value="">—</option>
+                {['أقل من سنة','1-3 سنوات','3-10 سنوات','10-20 سنة','أكثر من 20 سنة'].map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </FormField>
+          </div>
+        </div>
 
         <FormField label={lang === 'ar' ? 'الوصف' : 'Description'}>
           <textarea rows={3} className="input resize-none" {...register('description')} />

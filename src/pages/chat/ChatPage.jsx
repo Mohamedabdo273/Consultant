@@ -148,10 +148,21 @@ function SessionsSidebar({ sessions, activeSessionId, onSelect, onNewSession, is
 }
 
 // ── Chat Area ─────────────────────────────────────────────────────────────────
+const PERSONAS = [
+  { value: '',                    label: { ar: 'مستشار عام',         en: 'General Advisor'   }, emoji: '🧑‍💼' },
+  { value: 'StrategicAdvisor',    label: { ar: 'مستشار استراتيجي',  en: 'Strategic Advisor' }, emoji: '🎯' },
+  { value: 'RiskManager',         label: { ar: 'مدير المخاطر',       en: 'Risk Manager'      }, emoji: '🛡️' },
+  { value: 'DataAnalyst',         label: { ar: 'محلل البيانات',      en: 'Data Analyst'      }, emoji: '📊' },
+  { value: 'BidEngineer',         label: { ar: 'مهندس العطاءات',    en: 'Bid Engineer'      }, emoji: '📐' },
+  { value: 'ProcurementSpecialist',label: { ar: 'متخصص المشتريات', en: 'Procurement'       }, emoji: '🛒' },
+  { value: 'CRMSpecialist',       label: { ar: 'متخصص العملاء',     en: 'CRM Specialist'    }, emoji: '🤝' },
+];
+
 function ChatArea({ sessionId, onClearSession, onOpenSessions }) {
   const { lang } = useLang();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [persona, setPersona] = useState('');
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
@@ -215,7 +226,7 @@ function ChatArea({ sessionId, onClearSession, onOpenSessions }) {
     const text = input.trim();
     if (!text || isSending) return;
     setInput('');
-    sendMessage({ question: text, sessionId: sessionId || undefined });
+    sendMessage({ question: text, sessionId: sessionId || undefined, persona: persona || undefined });
   };
 
   const handleKeyDown = (e) => {
@@ -301,8 +312,25 @@ function ChatArea({ sessionId, onClearSession, onOpenSessions }) {
         <div ref={bottomRef} />
       </div>
 
+      {/* Persona Selector */}
+      <div className="px-4 pt-2 border-t border-gray-100 flex-shrink-0">
+        <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+          {PERSONAS.map(p => (
+            <button key={p.value} onClick={() => setPersona(p.value)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                persona === p.value
+                  ? 'bg-primary-600 text-white border-primary-600'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+              }`}>
+              <span>{p.emoji}</span>
+              <span>{lang === 'ar' ? p.label.ar : p.label.en}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Input */}
-      <div className="px-4 py-3 border-t border-gray-100 flex-shrink-0">
+      <div className="px-4 pb-3 flex-shrink-0">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
