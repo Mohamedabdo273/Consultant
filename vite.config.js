@@ -11,8 +11,11 @@ export default defineConfig({
       // All /api/* requests in dev go through Vite → no CORS issue
       '/api': {
         target: 'https://consultation.runasp.net',
+        secure: false,
         changeOrigin: true,
         secure: true,
+        proxyTimeout: 120000,
+        timeout: 120000,
       },
     },
   },

@@ -13,6 +13,7 @@ const translations = {
     users: 'المستخدمين', company: 'الشركة',
     milestones: 'المراحل', clientPortal: 'بوابة العميل', emailTemplates: 'قوالب الإيميل',
     risks: 'إدارة المخاطر', businessIntelligence: 'ذكاء الأعمال', crm: 'إدارة العملاء', cashFlow: 'التدفق النقدي',
+    ourServices: 'خدماتنا',
     // Common
     save: 'حفظ', cancel: 'إلغاء', delete: 'حذف', edit: 'تعديل',
     add: 'إضافة', search: 'بحث', filter: 'تصفية', loading: 'جار التحميل...',
@@ -43,6 +44,7 @@ const translations = {
     users: 'Users', company: 'Company',
     milestones: 'Milestones', clientPortal: 'Client Portal', emailTemplates: 'Email Templates',
     risks: 'Risk Management', businessIntelligence: 'Business Intelligence', crm: 'CRM', cashFlow: 'Cash Flow',
+    ourServices: 'Our Services',
     // Common
     save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit',
     add: 'Add', search: 'Search', filter: 'Filter', loading: 'Loading...',

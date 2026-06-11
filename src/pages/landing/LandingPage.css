@@ -354,16 +354,14 @@
 
 .lp-service-num {
   font-family: 'Playfair Display', serif;
-  font-size: 3.2rem;
-  color: rgba(201,168,76,0.12);
+  font-size: 2.4rem;
+  color: rgba(201,168,76,0.18);
   line-height: 1;
-  margin-bottom: 0.75rem;
   font-weight: 900;
 }
 
 .lp-service-icon {
   font-size: 2rem;
-  margin-bottom: 0.75rem;
 }
 
 .lp-service-title {
@@ -377,6 +375,40 @@
   font-size: 0.83rem;
   color: var(--gray);
   line-height: 2;
+  margin-bottom: 0.75rem;
+}
+
+.lp-service-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.lp-service-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lp-service-bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.5;
+}
+
+.lp-bullet-dot {
+  color: var(--gold);
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  font-weight: 700;
 }
 
 .lp-tags {

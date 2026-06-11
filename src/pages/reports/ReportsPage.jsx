@@ -30,7 +30,14 @@ import { useForm } from 'react-hook-form';
 
 const PAGE_SIZE = 10;
 
-const REPORT_TYPES = ['Financial', 'Operational', 'Project', 'Summary', 'Custom'];
+// must match backend ReportType enum exactly (string or int both work with JsonStringEnumConverter)
+const REPORT_TYPES = [
+  { value: 0, label: 'تقدم المشروع',  labelEn: 'Progress'   },
+  { value: 1, label: 'أسبوعي',        labelEn: 'Weekly'     },
+  { value: 2, label: 'شهري',          labelEn: 'Monthly'    },
+  { value: 3, label: 'مرحلة رئيسية', labelEn: 'Milestone'  },
+  { value: 4, label: 'نهائي',         labelEn: 'Final'      },
+];
 
 function formatDate(d) {
   if (!d) return '—';
@@ -106,9 +113,9 @@ function GenerateReportModal({ open, onClose }) {
       <form
         onSubmit={handleSubmit((data) => mutate({
           title:     data.name,
-          content:   data.notes || `تقرير ${data.type ?? ''} بتاريخ ${data.startDate ?? ''}`,
-          projectId: data.projectId || undefined,
-          type:      data.type,
+          content:   data.notes || `تقرير بتاريخ ${new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+          projectId: data.projectId,
+          type:      Number(data.type ?? 0),
         }))}
         className="space-y-4"
         noValidate
@@ -128,19 +135,20 @@ function GenerateReportModal({ open, onClose }) {
         </FormField>
 
         <FormField label={lang === 'ar' ? 'نوع التقرير' : 'Report Type'} error={errors.type?.message}>
-          <select className="input" {...register('type')}>
+          <select className="input" defaultValue={0} {...register('type')}>
             {REPORT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
+              <option key={t.value} value={t.value}>
+                {lang === 'ar' ? t.label : t.labelEn}
               </option>
             ))}
           </select>
         </FormField>
 
-        {projects.length > 0 && (
-          <FormField label={lang === 'ar' ? 'المشروع' : 'Project'} error={errors.projectId?.message}>
-            <select className="input" {...register('projectId')}>
-              <option value="">{lang === 'ar' ? 'كل المشاريع' : 'All Projects'}</option>
+        {true && (
+          <FormField label={lang === 'ar' ? 'المشروع' : 'Project'} required error={errors.projectId?.message}>
+            <select className={`input ${errors.projectId ? 'border-red-400' : ''}`}
+              {...register('projectId', { required: lang === 'ar' ? 'المشروع مطلوب' : 'Project is required' })}>
+              <option value="">{lang === 'ar' ? '-- اختر مشروعاً --' : '-- Select a project --'}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -150,7 +158,7 @@ function GenerateReportModal({ open, onClose }) {
           </FormField>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 hidden">
           <FormField
             label={lang === 'ar' ? 'من تاريخ' : 'From Date'}
             error={errors.startDate?.message}
@@ -220,17 +228,24 @@ function ViewReportModal({ reportId, open, onClose }) {
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="col-span-2">
               <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-                {lang === 'ar' ? 'الاسم' : 'Name'}
+                {lang === 'ar' ? 'عنوان التقرير' : 'Title'}
               </p>
-              <p className="text-sm font-medium text-gray-900">{data.name ?? '—'}</p>
+              <p className="text-sm font-semibold text-gray-900">{data.title ?? data.name ?? '—'}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
                 {lang === 'ar' ? 'النوع' : 'Type'}
               </p>
-              <p className="text-sm font-medium text-gray-900">{data.type ?? '—'}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {(() => {
+                  const found = REPORT_TYPES.find(
+                    (t) => t.value === data.type || t.labelEn?.toLowerCase() === String(data.type ?? '').toLowerCase()
+                  );
+                  return found ? (lang === 'ar' ? found.label : found.labelEn) : (data.type ?? '—');
+                })()}
+              </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
@@ -246,19 +261,27 @@ function ViewReportModal({ reportId, open, onClose }) {
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-                {lang === 'ar' ? 'تاريخ الإنشاء' : 'Created Date'}
+                {lang === 'ar' ? 'بواسطة' : 'Created By'}
+              </p>
+              <p className="text-sm text-gray-700">{data.createdBy ?? data.createdByName ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
+                {lang === 'ar' ? 'تاريخ الإنشاء' : 'Created'}
               </p>
               <p className="text-sm text-gray-700">{formatDate(data.createdAt ?? data.created)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-                {lang === 'ar' ? 'المدة' : 'Period'}
+                {lang === 'ar' ? 'تاريخ التقديم' : 'Submitted'}
               </p>
-              <p className="text-sm text-gray-700">
-                {data.startDate || data.endDate
-                  ? `${formatDate(data.startDate)} → ${formatDate(data.endDate)}`
-                  : '—'}
+              <p className="text-sm text-gray-700">{data.submittedAt ? formatDate(data.submittedAt) : '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
+                {lang === 'ar' ? 'تاريخ الاعتماد' : 'Approved'}
               </p>
+              <p className="text-sm text-gray-700">{data.approvedAt ? formatDate(data.approvedAt) : '—'}</p>
             </div>
           </div>
 
@@ -332,7 +355,13 @@ export default function ReportsPage() {
   const projects = projectsData?.items ?? projectsData?.projects ?? projectsData?.data ?? [];
 
   const byType = countByType(allReports);
-  const topType = Object.entries(byType).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+  const topTypeRaw = Object.entries(byType).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const topTypeFound = topTypeRaw ? REPORT_TYPES.find(
+    (t) => t.value === Number(topTypeRaw) || t.labelEn?.toLowerCase() === topTypeRaw.toLowerCase()
+  ) : null;
+  const topType = topTypeFound
+    ? (lang === 'ar' ? topTypeFound.label : topTypeFound.labelEn)
+    : (topTypeRaw ?? '—');
 
   const { mutate: deleteReport, isPending: isDeleting } = useMutation({
     mutationFn: (id) => reportsApi.delete(id),
@@ -453,8 +482,8 @@ export default function ReportsPage() {
           >
             <option value="">{lang === 'ar' ? 'كل الأنواع' : 'All Types'}</option>
             {REPORT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
+              <option key={t.value} value={t.value}>
+                {lang === 'ar' ? t.label : t.labelEn}
               </option>
             ))}
           </select>
@@ -546,7 +575,12 @@ export default function ReportsPage() {
               </td>
               <td className="table-cell">
                 <span className="badge bg-purple-100 text-purple-700">
-                  {report.type ?? '—'}
+                  {(() => {
+                    const found = REPORT_TYPES.find(
+                      (t) => t.value === report.type || t.labelEn?.toLowerCase() === String(report.type).toLowerCase()
+                    );
+                    return found ? (lang === 'ar' ? found.label : found.labelEn) : (report.type ?? '—');
+                  })()}
                 </span>
               </td>
               <td className="table-cell">

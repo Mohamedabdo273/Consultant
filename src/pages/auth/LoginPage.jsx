@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, LogIn, ShieldCheck, Globe, ArrowLeft, ArrowRight } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const { login, updateUser } = useAuth();
   const { t, lang, toggleLang, isRTL } = useLang();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [showPassword, setShowPassword]   = useState(false);
   const [twoFactorStep, setTwoFactorStep] = useState(false);
@@ -53,6 +55,7 @@ export default function LoginPage() {
         email: dto.email, role: dto.role, avatarUrl: dto.avatarUrl ?? null,
       });
       toast.success(lang === 'ar' ? 'مرحباً بك!' : 'Welcome!');
+      queryClient.clear();
       navigate('/dashboard');
     } catch (err) {
       toast.error(err?.response?.data?.message || (lang === 'ar' ? 'فشل تسجيل الدخول بـ Google' : 'Google login failed'));
@@ -76,6 +79,7 @@ export default function LoginPage() {
         toast.success(lang === 'ar' ? 'أدخل رمز التحقق الثنائي' : 'Enter your 2FA code');
       } else {
         toast.success(lang === 'ar' ? 'مرحباً بك!' : 'Welcome back!');
+        queryClient.clear();
         navigate('/dashboard');
       }
     } catch (err) {
@@ -101,6 +105,7 @@ export default function LoginPage() {
         email: dto.email, role: dto.role, avatarUrl: dto.avatarUrl ?? null,
       });
       toast.success(lang === 'ar' ? 'مرحباً بك!' : 'Welcome back!');
+      queryClient.clear();
       navigate('/dashboard');
     } catch (err) {
       setServerError(

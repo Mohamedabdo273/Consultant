@@ -133,11 +133,15 @@ function CreateInvoiceModal({ open, onClose }) {
 
   const { data: clientsData } = useQuery({
     queryKey: ['clients-dropdown'],
-    queryFn: () => usersApi.getAll({ role: 'Client', pageSize: 100 }).then((r) => r.data?.data ?? r.data),
+    queryFn: () => usersApi.getAll({ pageSize: 200 }).then((r) => r.data?.data ?? r.data),
     enabled: open,
     staleTime: 120_000,
   });
-  const clients = clientsData?.items ?? clientsData?.users ?? clientsData?.data ?? [];
+  const allUsers = clientsData?.items ?? clientsData?.users ?? clientsData?.data ?? (Array.isArray(clientsData) ? clientsData : []);
+  const filtered = allUsers.filter((u) =>
+    u.role?.toLowerCase() === 'client' || u.roles?.some?.((r) => r.toLowerCase() === 'client')
+  );
+  const clients = filtered.length > 0 ? filtered : allUsers;
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data) => invoicesApi.create(data),

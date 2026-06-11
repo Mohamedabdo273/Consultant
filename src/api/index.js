@@ -184,7 +184,7 @@ export const documentsApi = {
   }),
   delete:      (id)       => api.delete(`/documents/${id}`),
   getStatus:   (id)       => api.get(`/documents/${id}/status`),
-  analyze:     (id)       => api.post(`/documents/${id}/analyze`),
+  analyze:     (id, intake) => api.post(`/documents/${id}/analyze`, intake ?? null),
   getDownload: (id)       => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
   bulkAnalyze: (data)     => api.post('/documents/bulk-analyze', data),
 };

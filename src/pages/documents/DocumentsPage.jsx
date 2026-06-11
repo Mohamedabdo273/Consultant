@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AnalysisIntakeModal from './AnalysisIntakeModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
@@ -18,7 +20,7 @@ import {
   Loader2,
   BrainCircuit,
 } from 'lucide-react';
-import { documentsApi } from '../../api/index';
+import { documentsApi, analysisApi } from '../../api/index';
 import { useLang } from '../../context/LangContext';
 import {
   EmptyState,
@@ -183,6 +185,7 @@ function DocumentCard({ doc, onDelete, onDownload, onAnalyze, isDownloading, isA
 export default function DocumentsPage() {
   const { t, lang, isRTL } = useLang();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [page, setPage] = useState(1);
@@ -194,6 +197,7 @@ export default function DocumentsPage() {
   const [uploadProgress, setUploadProgress] = useState(null);
   const [uploadFileName, setUploadFileName] = useState('');
   const [analyzingId, setAnalyzingId] = useState(null);
+  const [intakeTarget, setIntakeTarget] = useState(null); // doc waiting for intake form
 
   const filters = {
     page,
@@ -245,22 +249,76 @@ export default function DocumentsPage() {
     },
   });
 
-  const handleAnalyze = async (doc) => {
+  // Step 1: open intake modal
+  const handleAnalyzeClick = (doc) => {
+    setIntakeTarget(doc);
+  };
+
+  // Step 2: intake form submitted → call API (sync, may take 60-90s)
+  const handleAnalyze = async (intakeData) => {
+    const doc = intakeTarget;
+    if (!doc) return;
     setAnalyzingId(doc.id);
     try {
-      await documentsApi.analyze(doc.id);
-      toast.success(
-        lang === 'ar'
-          ? `بدأ تحليل "${doc.name ?? doc.fileName ?? 'الملف'}" — ستظهر النتائج في صفحة التحليل الذكي`
-          : `Analysis started for "${doc.name ?? doc.fileName ?? 'file'}" — results will appear in AI Dashboard`
-      );
+      const res = await documentsApi.analyze(doc.id, intakeData);
+      const result = res.data?.data;
+      // Handle both sync result (new backend) and async job response (old backend)
+      const hasRealResult = result && (result.executiveSummary || result.strengths?.length || result.ExecutiveSummary);
+      if (hasRealResult) {
+        queryClient.invalidateQueries({ queryKey: ['documents'] });
+        setIntakeTarget(null);
+        navigate('/documents/analysis-result', {
+          state: { result: { ...result, fileName: doc.name ?? doc.fileName ?? 'الملف' } }
+        });
+      } else if (result?.jobId || result?.JobId) {
+        // Old backend: job queued — poll for result
+        toast.success(lang === 'ar' ? 'جارٍ التحليل... انتظر قليلاً' : 'Analysis queued, please wait...');
+        setIntakeTarget(null);
+        await pollForResult(doc, result?.jobId ?? result?.JobId);
+      } else {
+        toast.error(lang === 'ar' ? 'لم تُرجع نتيجة تحليل' : 'No analysis result returned');
+      }
     } catch (err) {
-      toast.error(
-        err?.response?.data?.message || (lang === 'ar' ? 'فشل بدء التحليل' : 'Failed to start analysis')
-      );
+      const msg = err?.response?.data?.message ?? err?.message ?? '';
+      if (err.code === 'ECONNABORTED' || msg.includes('timeout')) {
+        toast.error(lang === 'ar' ? 'انتهت مهلة التحليل — حاول مرة أخرى' : 'Analysis timed out — please retry');
+      } else {
+        toast.error(msg || (lang === 'ar' ? 'فشل التحليل' : 'Analysis failed'));
+      }
     } finally {
       setAnalyzingId(null);
     }
+  };
+
+  // Poll for result after async job (fallback for old backend)
+  const pollForResult = async (doc, _jobId) => {
+    const maxTries = 12;
+    const delay = 8000; // 8s between polls
+    for (let i = 0; i < maxTries; i++) {
+      await new Promise(r => setTimeout(r, delay));
+      try {
+        const statusRes = await documentsApi.getStatus(doc.id);
+        const status = statusRes.data?.data?.status ?? statusRes.data?.status;
+        if (status === 'Done' || status === 'Completed') {
+          // fetch latest analysis result
+          const latestRes = await analysisApi.getLatest?.();
+          const result = latestRes?.data?.data;
+          if (result) {
+            navigate('/documents/analysis-result', {
+              state: { result: { ...result, fileName: doc.name ?? doc.fileName ?? 'الملف' } }
+            });
+            return;
+          }
+          toast.success(lang === 'ar' ? 'اكتمل التحليل — اذهب لصفحة التحليل' : 'Analysis complete — check Analysis page');
+          return;
+        }
+        if (status === 'Failed') {
+          toast.error(lang === 'ar' ? 'فشل التحليل في المعالجة' : 'Analysis processing failed');
+          return;
+        }
+      } catch { /* ignore poll errors */ }
+    }
+    toast.error(lang === 'ar' ? 'انتهى وقت الانتظار — تحقق من صفحة التحليل لاحقاً' : 'Timed out — check Analysis page later');
   };
 
   const handleFileChange = useCallback(
@@ -501,7 +559,7 @@ export default function DocumentsPage() {
               doc={doc}
               onDelete={setDeleteTarget}
               onDownload={handleDownload}
-              onAnalyze={handleAnalyze}
+              onAnalyze={handleAnalyzeClick}
               isDownloading={downloadingId === doc.id}
               isAnalyzing={analyzingId === doc.id}
               lang={lang}
@@ -572,7 +630,7 @@ export default function DocumentsPage() {
                         <div className="flex items-center gap-1">
                           {(doc.status === 'Done' || doc.status === 'Uploaded') && (
                             <button
-                              onClick={() => handleAnalyze(doc)}
+                              onClick={() => handleAnalyzeClick(doc)}
                               disabled={analyzingId === doc.id}
                               className="p-1.5 rounded-lg hover:bg-primary-50 text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-50"
                               title={lang === 'ar' ? 'تحليل بالذكاء الاصطناعي' : 'Analyze with AI'}
@@ -620,6 +678,16 @@ export default function DocumentsPage() {
           <Pagination page={page} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
+
+      {/* Analysis Intake Modal */}
+      <AnalysisIntakeModal
+        open={!!intakeTarget}
+        onClose={() => { if (!analyzingId) setIntakeTarget(null); }}
+        onSubmit={handleAnalyze}
+        doc={intakeTarget}
+        isAnalyzing={!!analyzingId}
+        lang={lang}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

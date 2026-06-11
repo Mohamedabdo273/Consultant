@@ -4,7 +4,7 @@ import {
   FileSignature, BarChart3, Clock, Upload, BrainCircuit,
   MessageSquare, Bell, Settings, LogOut, Users, Building2,
   ShieldCheck, ChevronLeft, ChevronRight, X, Sparkles,
-  Target, UserCircle, Mail, ShieldAlert, TrendingUp, HeartHandshake, Banknote,
+  Target, UserCircle, Mail, ShieldAlert, TrendingUp, HeartHandshake, Banknote, Briefcase,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
@@ -28,6 +28,7 @@ const navItems = (role) => {
     { to: '/bi',          icon: TrendingUp,      key: 'businessIntelligence' },
     { to: '/crm',         icon: HeartHandshake,  key: 'crm'       },
     { to: '/cashflow',    icon: Banknote,        key: 'cashFlow'  },
+    { to: '/services',    icon: Briefcase,       key: 'ourServices'},
   ];
 
   const adminItems = [
@@ -37,7 +38,7 @@ const navItems = (role) => {
     { to: '/admin/settings',           icon: ShieldCheck, key: 'admin'          },
   ];
 
-  if (['SuperAdmin', 'Admin'].includes(role)) return [...base, ...adminItems];
+  if (role === 'SuperAdmin') return [...base, ...adminItems];
   if (role === 'Client') return [
     { to: '/dashboard',    icon: LayoutDashboard, key: 'dashboard'    },
     { to: '/client-portal',icon: UserCircle,      key: 'clientPortal' },

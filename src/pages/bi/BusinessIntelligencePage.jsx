@@ -4,8 +4,12 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import {
   TrendingUp, Target, BarChart3, Building2, Lightbulb,
-  ChevronRight, Loader2, CheckCircle2,
+  ChevronRight, Loader2, CheckCircle2, Printer,
 } from 'lucide-react';
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
 import { biApi } from '../../api/index';
 import { useLang } from '../../context/LangContext';
 
@@ -36,6 +40,252 @@ function ScenarioCard({ label, color, data }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+// ── Priority color helpers ─────────────────────────────────────────────────────
+const priorityColor = { High: '#ef4444', Medium: '#f59e0b', Low: '#22c55e' };
+const effortColor   = { Low: '#22c55e', Medium: '#3b82f6', High: '#f59e0b' };
+const PIE_COLORS = ['#1e3a5f', '#2d9d6e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+// ── Professional BI Report (Giza Power style) ──────────────────────────────────
+function BdAnalysisReport({ data, formData }) {
+  const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  // build pie data from priorities
+  const priorityCount = { High: 0, Medium: 0, Low: 0 };
+  data.opportunities?.forEach(o => { if (priorityCount[o.priority] !== undefined) priorityCount[o.priority]++; });
+  const pieData = Object.entries(priorityCount)
+    .filter(([, v]) => v > 0)
+    .map(([name, value]) => ({ name: name === 'High' ? 'أولوية عالية' : name === 'Medium' ? 'أولوية متوسطة' : 'أولوية منخفضة', value }));
+
+  // build bar data from effort
+  const effortCount = { Low: 0, Medium: 0, High: 0 };
+  data.opportunities?.forEach(o => { if (effortCount[o.effort] !== undefined) effortCount[o.effort]++; });
+  const barData = [
+    { name: 'جهد منخفض', value: effortCount.Low,    fill: effortColor.Low },
+    { name: 'جهد متوسط', value: effortCount.Medium,  fill: effortColor.Medium },
+    { name: 'جهد عالي',  value: effortCount.High,    fill: effortColor.High },
+  ].filter(d => d.value > 0);
+
+  const total = data.opportunities?.length ?? 0;
+
+  return (
+    <div className="space-y-0 print:space-y-0" id="bd-report">
+      {/* ── HEADER ── */}
+      <div className="bg-[#1e3a5f] text-white rounded-t-2xl px-6 py-4 flex items-start justify-between">
+        <div>
+          <p className="text-xs text-blue-300 font-medium tracking-wide uppercase">Shabana Consulting Group</p>
+          <h2 className="text-xl font-bold mt-1">تقرير تحليل فرص الأعمال</h2>
+          <p className="text-sm text-blue-200 mt-0.5">Business Opportunities Analysis Report</p>
+        </div>
+        <div className="text-left text-xs text-blue-200 space-y-0.5">
+          <p className="font-semibold text-white">نوع النشاط: {formData?.businessContext ?? '—'}</p>
+          <p>السوق المستهدف: {formData?.targetMarket ?? '—'}</p>
+          <p>هدف النمو: {formData?.growthGoal ?? '—'}</p>
+          <p>الإطار الزمني: {formData?.timeframe ?? '—'}</p>
+        </div>
+      </div>
+
+      {/* ── EXEC SUMMARY BAND ── */}
+      {data.executiveSummary && (
+        <div className="bg-[#2d9d6e] text-white px-6 py-3">
+          <p className="text-sm leading-relaxed">{data.executiveSummary}</p>
+        </div>
+      )}
+
+      {/* ── OPPORTUNITIES TABLE ── */}
+      <div className="bg-white border-x border-gray-200 px-6 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <CheckCircle2 size={16} className="text-[#2d9d6e]" />
+          <h3 className="font-bold text-[#1e3a5f] text-sm uppercase tracking-wide">الفرص المُحددة</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-[#1e3a5f] text-white">
+                <th className="text-right px-3 py-2 font-semibold rounded-tl-lg">الفرصة</th>
+                <th className="text-right px-3 py-2 font-semibold">الوصف</th>
+                <th className="text-center px-3 py-2 font-semibold">القيمة المتوقعة</th>
+                <th className="text-center px-3 py-2 font-semibold">الجهد</th>
+                <th className="text-center px-3 py-2 font-semibold">المدة</th>
+                <th className="text-center px-3 py-2 font-semibold rounded-tr-lg">الأولوية</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.opportunities?.map((o, i) => (
+                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-3 py-2 font-medium text-[#1e3a5f]">{o.title}</td>
+                  <td className="px-3 py-2 text-gray-600 max-w-xs">{o.description}</td>
+                  <td className="px-3 py-2 text-center text-[#2d9d6e] font-semibold">{o.potentialValue}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: effortColor[o.effort] + '22', color: effortColor[o.effort] }}>
+                      {o.effort === 'Low' ? 'منخفض' : o.effort === 'Medium' ? 'متوسط' : 'عالي'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center text-gray-600">{o.timeline}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: priorityColor[o.priority] + '22', color: priorityColor[o.priority] }}>
+                      {o.priority === 'High' ? 'عالية' : o.priority === 'Medium' ? 'متوسطة' : 'منخفضة'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-[#1e3a5f] text-white font-bold">
+                <td className="px-3 py-2 rounded-bl-lg">إجمالي الفرص</td>
+                <td className="px-3 py-2" />
+                <td className="px-3 py-2 text-center">{total} فرصة</td>
+                <td className="px-3 py-2" />
+                <td className="px-3 py-2" />
+                <td className="px-3 py-2 rounded-br-lg text-center">100%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── CHARTS + CARDS ROW ── */}
+      <div className="bg-white border-x border-gray-200 px-6 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Bar chart - effort */}
+          <div className="lg:col-span-1">
+            <p className="text-xs font-bold text-[#1e3a5f] uppercase mb-2 text-center">توزيع الجهد المطلوب</p>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={barData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Bar dataKey="value" name="عدد الفرص" radius={[4, 4, 0, 0]}>
+                  {barData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Pie chart - priority */}
+          <div className="lg:col-span-1">
+            <p className="text-xs font-bold text-[#1e3a5f] uppercase mb-2 text-center">توزيع الأولويات</p>
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Pie>
+                <Tooltip />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Key cards */}
+          <div className="lg:col-span-1 space-y-3">
+            {/* Market position */}
+            {data.marketPosition && (
+              <div className="border border-[#2d9d6e] rounded-xl p-3">
+                <p className="text-xs font-bold text-[#2d9d6e] mb-1 flex items-center gap-1">
+                  <TrendingUp size={12} /> الموقع التنافسي
+                </p>
+                <p className="text-xs text-gray-700 leading-relaxed">{data.marketPosition}</p>
+              </div>
+            )}
+            {/* Summary stats */}
+            <div className="bg-[#1e3a5f] rounded-xl p-3 text-white">
+              <p className="text-xs font-bold mb-2 text-blue-200">ملخص الفرص</p>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-blue-200">إجمالي الفرص</span>
+                  <span className="font-bold">{total}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-blue-200">أولوية عالية</span>
+                  <span className="font-bold text-red-300">{priorityCount.High}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-blue-200">أولوية متوسطة</span>
+                  <span className="font-bold text-yellow-300">{priorityCount.Medium}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-blue-200">أولوية منخفضة</span>
+                  <span className="font-bold text-green-300">{priorityCount.Low}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── QUICK WINS + LONG TERM ROW ── */}
+      <div className="bg-white border-x border-gray-200 px-6 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {data.quickWins?.length > 0 && (
+            <div className="border border-[#2d9d6e] rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 size={15} className="text-[#2d9d6e]" />
+                <h4 className="font-bold text-[#1e3a5f] text-sm">الانتصارات السريعة (30-90 يوم)</h4>
+              </div>
+              <ul className="space-y-2">
+                {data.quickWins.map((w, i) => (
+                  <li key={i} className="flex gap-2 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-[#2d9d6e] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                    <span className="text-gray-700">{w}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {data.longTermPlays?.length > 0 && (
+            <div className="border border-[#1e3a5f] rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Target size={15} className="text-[#1e3a5f]" />
+                <h4 className="font-bold text-[#1e3a5f] text-sm">الاستراتيجيات طويلة المدى (1-3 سنوات)</h4>
+              </div>
+              <ul className="space-y-2">
+                {data.longTermPlays.map((p, i) => (
+                  <li key={i} className="flex gap-2 text-sm">
+                    <ChevronRight size={14} className="text-[#1e3a5f] flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── GROWTH ROADMAP ── */}
+      {data.growthRoadmap && (
+        <div className="bg-white border-x border-gray-200 px-6 py-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-xs font-bold text-[#1e3a5f] mb-1 uppercase tracking-wide">خارطة طريق النمو</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{data.growthRoadmap}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── FOOTER ── */}
+      <div className="bg-[#1e3a5f] text-white rounded-b-2xl px-6 py-4 grid grid-cols-3 gap-4 items-center">
+        <div className="bg-[#2d9d6e] rounded-xl p-3 text-center col-span-1">
+          <p className="text-xs text-green-100 mb-1">إجمالي الفرص المُحللة</p>
+          <p className="text-2xl font-black">{total}</p>
+          <p className="text-xs text-green-200">فرصة أعمال قابلة للتنفيذ</p>
+        </div>
+        <div className="text-center col-span-1">
+          <p className="text-xs text-blue-300 mb-1">اعتمد التقرير</p>
+          <p className="font-bold">Shabana Consulting Group</p>
+          <p className="text-xs text-blue-300 mt-0.5 italic">SCG — Business Intelligence</p>
+        </div>
+        <div className="text-center col-span-1">
+          <p className="text-xs text-blue-300 mb-1">تاريخ التقرير</p>
+          <p className="text-sm font-semibold">{today}</p>
+          <button
+            onClick={() => window.print()}
+            className="mt-2 flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg mx-auto transition"
+          >
+            <Printer size={12} /> طباعة التقرير
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -244,6 +494,7 @@ function ToolPanel({ tool, lang }) {
   const lbl = (ar, en) => lang === 'ar' ? ar : en;
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [result, setResult] = useState(null);
+  const [lastFormData, setLastFormData] = useState(null);
 
   const { mutate, isPending } = useMutation({
     mutationFn: tool.mutationFn,
@@ -254,9 +505,14 @@ function ToolPanel({ tool, lang }) {
     onError: (e) => toast.error(e?.response?.data?.message ?? lbl('حدث خطأ','Error occurred')),
   });
 
+  const onSubmit = (data) => {
+    setLastFormData(data);
+    mutate(data);
+  };
+
   return (
     <div className="space-y-5">
-      <form onSubmit={handleSubmit(mutate)} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
         <div className="flex items-center gap-3 pb-2 border-b">
           <div className={`w-9 h-9 rounded-xl ${tool.bg} flex items-center justify-center`}>
             <tool.icon size={18} className={tool.color} />
@@ -296,7 +552,11 @@ function ToolPanel({ tool, lang }) {
         </button>
       </form>
 
-      {result && tool.renderResult(result, lbl)}
+      {result && (
+        tool.key === 'opportunities'
+          ? <BdAnalysisReport data={result} formData={lastFormData} />
+          : tool.renderResult(result, lbl)
+      )}
     </div>
   );
 }

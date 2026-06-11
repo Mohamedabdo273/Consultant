@@ -8,7 +8,7 @@ const API_BASE = import.meta.env.DEV
 
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 30000,
+  timeout: 120000, // 2 min — AI analysis can take up to 90s
 });
 
 // ── Request interceptor — attach token + language ──────────────────────────

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -7,6 +7,7 @@ import {
   FileSignature,
   Eye,
   PenLine,
+  Pencil,
   Trash2,
   Calendar,
   DollarSign,
@@ -75,12 +76,12 @@ function ViewContractModal({ contract, open, onClose }) {
             <p className="font-semibold text-gray-900">{formatCurrency(contract.value, contract.currency)}</p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs mb-1">{lang === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}</p>
-            <p className="font-medium text-gray-900">{formatDate(contract.expiryDate)}</p>
+            <p className="text-gray-500 text-xs mb-1">{lang === 'ar' ? 'تاريخ البداية' : 'Start Date'}</p>
+            <p className="font-medium text-gray-900">{formatDate(contract.startDate ?? contract.signedDate)}</p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs mb-1">{lang === 'ar' ? 'تاريخ التوقيع' : 'Signed Date'}</p>
-            <p className="font-medium text-gray-900">{formatDate(contract.signedDate)}</p>
+            <p className="text-gray-500 text-xs mb-1">{lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}</p>
+            <p className="font-medium text-gray-900">{formatDate(contract.endDate ?? contract.expiryDate)}</p>
           </div>
           <div>
             <p className="text-gray-500 text-xs mb-1">{lang === 'ar' ? 'المشروع' : 'Project'}</p>
@@ -131,7 +132,7 @@ function SignContractModal({ contract, open, onClose }) {
       title={lang === 'ar' ? 'توقيع العقد' : 'Sign Contract'}
       size="sm"
     >
-      <form onSubmit={handleSubmit((d) => mutate({ signatureText: d.signatureText }))} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit((d) => mutate({ signature: d.signatureText }))} className="space-y-4" noValidate>
         <p className="text-sm text-gray-600">
           {lang === 'ar'
             ? `أنت على وشك توقيع عقد "${contract.title}". أدخل نص توقيعك للمتابعة.`
@@ -196,11 +197,16 @@ function CreateContractModal({ open, onClose }) {
 
   const { data: clientsData } = useQuery({
     queryKey: ['clients-dropdown'],
-    queryFn: () => usersApi.getAll({ role: 'Client', pageSize: 100 }).then((r) => r.data?.data ?? r.data),
+    queryFn: () => usersApi.getAll({ pageSize: 200 }).then((r) => r.data?.data ?? r.data),
     enabled: open,
     staleTime: 120_000,
   });
-  const clients = clientsData?.items ?? clientsData?.users ?? clientsData?.data ?? [];
+  const allUsers = clientsData?.items ?? clientsData?.users ?? clientsData?.data ?? (Array.isArray(clientsData) ? clientsData : []);
+  const filtered = allUsers.filter((u) =>
+    u.role?.toLowerCase() === 'client' || u.roles?.some?.((r) => r.toLowerCase() === 'client')
+  );
+  // fallback: إذا مفيش أحد بـ role=Client، اعرض كل المستخدمين
+  const clients = filtered.length > 0 ? filtered : allUsers;
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data) => contractsApi.create(data),
@@ -226,7 +232,8 @@ function CreateContractModal({ open, onClose }) {
       clientUserId: data.clientUserId || undefined,
       value:        data.value        ? Number(data.value) : undefined,
       currency:     data.currency     || 'EGP',
-      endDate:      data.expiryDate   || undefined,  // backend field is endDate
+      startDate:    data.startDate    || undefined,
+      endDate:      data.endDate      || undefined,
     });
   };
 
@@ -298,11 +305,12 @@ function CreateContractModal({ open, onClose }) {
             </select>
           </FormField>
 
-          <FormField
-            label={lang === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}
-            error={errors.expiryDate?.message}
-          >
-            <input type="date" className="input" {...register('expiryDate')} />
+          <FormField label={lang === 'ar' ? 'تاريخ البداية' : 'Start Date'}>
+            <input type="date" className="input" {...register('startDate')} />
+          </FormField>
+
+          <FormField label={lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}>
+            <input type="date" className="input" {...register('endDate')} />
           </FormField>
         </div>
 
@@ -339,6 +347,108 @@ function CreateContractModal({ open, onClose }) {
   );
 }
 
+// ── Edit Contract Modal ───────────────────────────────────────────────────────
+function EditContractModal({ contract, open, onClose }) {
+  const { lang } = useLang();
+  const queryClient = useQueryClient();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+
+  useEffect(() => {
+    if (contract && open) {
+      reset({
+        title:     contract.title       ?? '',
+        content:   contract.content     ?? '',
+        value:     contract.value       ?? '',
+        currency:  contract.currency    ?? 'EGP',
+        startDate: contract.startDate   ? contract.startDate.slice(0, 10) : '',
+        endDate:   contract.endDate     ? contract.endDate.slice(0, 10)   : '',
+      });
+    }
+  }, [contract, open]);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (data) => contractsApi.update(contract.id, data),
+    onSuccess: () => {
+      toast.success(lang === 'ar' ? 'تم تحديث العقد' : 'Contract updated');
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      onClose();
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || (lang === 'ar' ? 'فشل التحديث' : 'Update failed')),
+  });
+
+  const onSubmit = (data) => {
+    mutate({
+      title:        data.title,
+      content:      data.content,
+      projectId:    contract.projectId,
+      clientUserId: contract.clientUserId,
+      value:        Number(data.value) || 0,
+      currency:     data.currency,
+      startDate:    data.startDate || undefined,
+      endDate:      data.endDate   || undefined,
+    });
+  };
+
+  if (!contract) return null;
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={lang === 'ar' ? 'تعديل العقد' : 'Edit Contract'}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <FormField label={lang === 'ar' ? 'عنوان العقد' : 'Title'} required error={errors.title?.message}>
+          <input
+            type="text"
+            className={`input ${errors.title ? 'border-red-400' : ''}`}
+            {...register('title', { required: lang === 'ar' ? 'العنوان مطلوب' : 'Title required' })}
+          />
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label={lang === 'ar' ? 'القيمة' : 'Value'}>
+            <input type="number" min="0" step="0.01" className="input" {...register('value')} />
+          </FormField>
+
+          <FormField label={lang === 'ar' ? 'العملة' : 'Currency'}>
+            <select className="input" {...register('currency')}>
+              <option value="EGP">EGP — جنيه مصري</option>
+              <option value="USD">USD — دولار أمريكي</option>
+              <option value="EUR">EUR — يورو</option>
+              <option value="SAR">SAR — ريال سعودي</option>
+              <option value="AED">AED — درهم إماراتي</option>
+            </select>
+          </FormField>
+
+          <FormField label={lang === 'ar' ? 'تاريخ البداية' : 'Start Date'}>
+            <input type="date" className="input" {...register('startDate')} />
+          </FormField>
+
+          <FormField label={lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}>
+            <input type="date" className="input" {...register('endDate')} />
+          </FormField>
+        </div>
+
+        <FormField label={lang === 'ar' ? 'محتوى العقد' : 'Content'} required error={errors.content?.message}>
+          <textarea rows={5} className="input resize-none"
+            {...register('content', { required: lang === 'ar' ? 'محتوى العقد مطلوب' : 'Content required' })} />
+        </FormField>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button type="button" onClick={onClose} className="btn-secondary text-sm px-4 py-2">
+            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+          </button>
+          <button type="submit" disabled={isPending} className="btn-primary text-sm px-4 py-2 flex items-center gap-2">
+            {isPending ? <Spinner size="sm" /> : (lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ContractsPage() {
   const { t, lang, isRTL } = useLang();
@@ -348,6 +458,7 @@ export default function ContractsPage() {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
   const [signTarget, setSignTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -395,8 +506,8 @@ export default function ContractsPage() {
     lang === 'ar' ? 'العنوان' : 'Title',
     lang === 'ar' ? 'العميل' : 'Client',
     t('status'),
-    lang === 'ar' ? 'تاريخ التوقيع' : 'Signed Date',
-    lang === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date',
+    lang === 'ar' ? 'تاريخ البداية' : 'Start Date',
+    lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date',
     lang === 'ar' ? 'القيمة' : 'Value',
     t('actions'),
   ];
@@ -456,8 +567,9 @@ export default function ContractsPage() {
           }
         >
           {contracts.map((contract) => {
-            const expiringSoon = isExpiringSoon(contract.expiryDate);
-            const expired = contract.expiryDate && new Date(contract.expiryDate) < new Date();
+            const endDate = contract.endDate ?? contract.expiryDate;
+            const expiringSoon = isExpiringSoon(endDate);
+            const expired = endDate && new Date(endDate) < new Date();
 
             return (
               <tr key={contract.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -480,18 +592,18 @@ export default function ContractsPage() {
                 <td className="table-cell">
                   <StatusBadge status={contract.status} />
                 </td>
-                {/* Signed Date */}
+                {/* Start Date */}
                 <td className="table-cell">
                   <div className="flex items-center gap-1 text-sm text-gray-500">
                     <Calendar size={13} className="text-gray-400" />
-                    {formatDate(contract.signedDate)}
+                    {formatDate(contract.startDate ?? contract.signedDate)}
                   </div>
                 </td>
-                {/* Expiry Date */}
+                {/* End Date */}
                 <td className="table-cell">
                   <div className={`flex items-center gap-1 text-sm ${expired ? 'text-red-600' : expiringSoon ? 'text-yellow-600' : 'text-gray-500'}`}>
                     <Calendar size={13} className={expired ? 'text-red-400' : expiringSoon ? 'text-yellow-400' : 'text-gray-400'} />
-                    {formatDate(contract.expiryDate)}
+                    {formatDate(endDate)}
                     {expiringSoon && !expired && (
                       <span className="text-xs bg-yellow-100 text-yellow-700 rounded px-1 py-0.5">
                         {lang === 'ar' ? 'قريباً' : 'Soon'}
@@ -521,6 +633,15 @@ export default function ContractsPage() {
                     >
                       <Eye size={15} />
                     </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setEditTarget(contract)}
+                        className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                        title={lang === 'ar' ? 'تعديل' : 'Edit'}
+                      >
+                        <Pencil size={15} />
+                      </button>
+                    )}
                     {contract.status !== 'Signed' && (
                       <button
                         onClick={() => setSignTarget(contract)}
@@ -575,6 +696,7 @@ export default function ContractsPage() {
       {/* Modals */}
       <CreateContractModal open={createOpen} onClose={() => setCreateOpen(false)} />
       <ViewContractModal contract={viewTarget} open={!!viewTarget} onClose={() => setViewTarget(null)} />
+      <EditContractModal contract={editTarget} open={!!editTarget} onClose={() => setEditTarget(null)} />
       <SignContractModal contract={signTarget} open={!!signTarget} onClose={() => setSignTarget(null)} />
 
       <ConfirmDialog

@@ -158,7 +158,7 @@ const PERSONAS = [
   { value: 'CRMSpecialist',       label: { ar: 'متخصص العملاء',     en: 'CRM Specialist'    }, emoji: '🤝' },
 ];
 
-function ChatArea({ sessionId, onClearSession, onOpenSessions }) {
+function ChatArea({ sessionId, onSessionCreated, onClearSession, onOpenSessions }) {
   const { lang } = useLang();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -193,7 +193,11 @@ function ChatArea({ sessionId, onClearSession, onOpenSessions }) {
       setIsTyping(true);
       scrollToBottom();
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      const returnedSessionId = res?.data?.data?.sessionId ?? res?.data?.sessionId;
+      if (returnedSessionId && returnedSessionId !== sessionId) {
+        onSessionCreated?.(returnedSessionId);
+      }
       queryClient.invalidateQueries({ queryKey: ['chat-history', sessionId] });
       queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
       setIsTyping(false);
@@ -236,23 +240,6 @@ function ChatArea({ sessionId, onClearSession, onOpenSessions }) {
     }
   };
 
-  if (!sessionId) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mb-4">
-          <Bot size={28} className="text-primary-600" />
-        </div>
-        <h3 className="text-base font-semibold text-gray-900 mb-2">
-          {lang === 'ar' ? 'مرحباً بك في المساعد الذكي' : 'Welcome to AI Assistant'}
-        </h3>
-        <p className="text-sm text-gray-500 max-w-sm">
-          {lang === 'ar'
-            ? 'اختر محادثة من القائمة أو ابدأ محادثة جديدة'
-            : 'Select a conversation or start a new one'}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -381,7 +368,8 @@ export default function ChatPage() {
   };
 
   const handleNewSession = () => {
-    setActiveSessionId(null);
+    const newId = `session-${Date.now()}`;
+    setActiveSessionId(newId);
     setShowSidebar(false);
   };
 
@@ -437,6 +425,7 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <ChatArea
           sessionId={activeSessionId}
+          onSessionCreated={setActiveSessionId}
           onClearSession={handleClearSession}
           onOpenSessions={() => setShowSidebar(true)}
         />

@@ -228,6 +228,75 @@ function RiskModal({ risk, onClose }) {
   );
 }
 
+// ── Assessment Result Modal ───────────────────────────────────────────────────
+function AssessmentModal({ result, onClose }) {
+  const { lang } = useLang();
+  const lbl = (ar, en) => lang === 'ar' ? ar : en;
+  if (!result) return null;
+
+  const rows = [
+    { icon: '🔍', label: lbl('التقييم الشامل',        'Overall Assessment'),   value: result.assessment },
+    { icon: '📊', label: lbl('تحليل الاحتمالية',       'Likelihood Analysis'),  value: result.likelihood },
+    { icon: '💥', label: lbl('الأثر المالي والتشغيلي', 'Potential Impact'),     value: result.potentialImpact },
+    { icon: '🛡️', label: lbl('خطوات التخفيف',          'Mitigation Steps'),     value: result.mitigationSteps },
+    { icon: '🎯', label: lbl('خيارات القرار',           'Decision Options'),     value: result.decisionOptions },
+    { icon: '⚡', label: lbl('مؤشرات الإنذار المبكر',  'Early Warning Signs'),  value: result.earlyWarnings },
+  ].filter(r => r.value);
+
+  const scoreColor = result.updatedRiskScore >= 75 ? 'text-red-600 bg-red-50 border-red-200'
+    : result.updatedRiskScore >= 50 ? 'text-orange-600 bg-orange-50 border-orange-200'
+    : result.updatedRiskScore >= 25 ? 'text-yellow-600 bg-yellow-50 border-yellow-200'
+    : 'text-green-600 bg-green-50 border-green-200';
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b bg-purple-50 rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center">
+              <Brain size={18} className="text-purple-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900">{lbl('نتيجة التقييم بالذكاء الاصطناعي', 'AI Risk Assessment Result')}</h2>
+              <p className="text-xs text-gray-500">{lbl('تحليل PMI/RMP شامل للمخاطرة', 'Full PMI/RMP risk analysis')}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-purple-100 rounded-lg transition">
+            <X size={18} className="text-gray-500" />
+          </button>
+        </div>
+
+        {/* Updated Score Banner */}
+        <div className={`mx-5 mt-5 p-4 rounded-xl border flex items-center justify-between ${scoreColor}`}>
+          <span className="font-semibold text-sm">{lbl('الدرجة المحدّثة بعد التقييم', 'Updated Risk Score')}</span>
+          <span className="text-2xl font-black">{result.updatedRiskScore?.toFixed(0)} <span className="text-sm font-normal">/ 100</span></span>
+        </div>
+
+        {/* Assessment Rows */}
+        <div className="p-5 space-y-4">
+          {rows.map(({ icon, label, value }) => (
+            <div key={label} className="border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">{icon}</span>
+                <span className="font-semibold text-sm text-gray-700">{label}</span>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-5 pb-5">
+          <button onClick={onClose}
+            className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition">
+            {lbl('حسناً، تم الاطلاع', 'Got it')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function RisksPage() {
   const { lang } = useLang();
@@ -239,6 +308,7 @@ export default function RisksPage() {
   const [editRisk, setEditRisk]     = useState(null);
   const [decisionId, setDecisionId] = useState(null);
   const [assessingId, setAssessingId] = useState(null);
+  const [assessResult, setAssessResult] = useState(null);
 
   const { data: dashboard } = useQuery({
     queryKey: ['risks-dashboard'],
@@ -270,10 +340,12 @@ export default function RisksPage() {
 
   const assessMut = useMutation({
     mutationFn: (id) => risksApi.assess(id),
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success(lbl('تم التقييم بنجاح','AI assessment complete'));
       qc.invalidateQueries({ queryKey: ['risks'] });
+      qc.invalidateQueries({ queryKey: ['risks-dashboard'] });
       setAssessingId(null);
+      setAssessResult(res.data?.data ?? null);
     },
     onError: () => setAssessingId(null),
   });
@@ -428,23 +500,30 @@ export default function RisksPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <button onClick={() => setEditRisk(r)}
+                            title={lbl('عرض وتعديل بيانات المخاطرة', 'View & edit risk details')}
                             className="p-1.5 hover:bg-gray-100 rounded-lg transition text-gray-500">
                             <Eye size={14} />
                           </button>
                           <button
                             disabled={assessingId === r.id}
                             onClick={() => { setAssessingId(r.id); assessMut.mutate(r.id); }}
-                            className="p-1.5 hover:bg-purple-50 rounded-lg transition text-purple-500 disabled:opacity-40">
-                            <Brain size={14} />
+                            title={lbl('تقييم بالذكاء الاصطناعي — يحلل المخاطرة ويحدّث درجتها تلقائياً', 'AI assessment — analyses risk & auto-updates score')}
+                            className="p-1.5 hover:bg-purple-50 rounded-lg transition text-purple-500 disabled:opacity-40 relative">
+                            {assessingId === r.id
+                              ? <span className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin block" />
+                              : <Brain size={14} />}
                           </button>
                           <button onClick={() => setDecisionId(r.id)}
+                            title={lbl('دعم القرار — 3 سيناريوهات (متفائل / واقعي / حذر) + توصية AI', 'Decision support — 3 scenarios + AI recommendation')}
                             className="p-1.5 hover:bg-blue-50 rounded-lg transition text-blue-500">
                             <TrendingUp size={14} />
                           </button>
                           <button onClick={() => {
                             if (confirm(lbl('حذف المخاطرة؟','Delete this risk?')))
                               deleteMut.mutate(r.id);
-                          }} className="p-1.5 hover:bg-red-50 rounded-lg transition text-red-400">
+                          }}
+                            title={lbl('حذف المخاطرة نهائياً', 'Permanently delete this risk')}
+                            className="p-1.5 hover:bg-red-50 rounded-lg transition text-red-400">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -467,6 +546,9 @@ export default function RisksPage() {
       )}
       {decisionId && (
         <DecisionModal riskId={decisionId} onClose={() => setDecisionId(null)} />
+      )}
+      {assessResult && (
+        <AssessmentModal result={assessResult} onClose={() => setAssessResult(null)} />
       )}
     </div>
   );

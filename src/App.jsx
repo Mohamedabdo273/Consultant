@@ -20,7 +20,8 @@ import InvoicesPage     from './pages/invoices/InvoicesPage';
 import ContractsPage    from './pages/contracts/ContractsPage';
 import ReportsPage      from './pages/reports/ReportsPage';
 import TimeEntriesPage  from './pages/time/TimeEntriesPage';
-import DocumentsPage    from './pages/documents/DocumentsPage';
+import DocumentsPage              from './pages/documents/DocumentsPage';
+import DocumentAnalysisResultPage from './pages/documents/DocumentAnalysisResultPage';
 import AnalysisPage       from './pages/analysis/AnalysisPage';
 import AnalysisDetailPage from './pages/analysis/AnalysisDetailPage';
 import ChatPage         from './pages/chat/ChatPage';
@@ -35,6 +36,9 @@ import ClientPortalPage   from './pages/client/ClientPortalPage';
 import MilestonesPage     from './pages/milestones/MilestonesPage';
 import EmailTemplatesPage from './pages/settings/EmailTemplatesPage';
 
+// Services page
+import ServicesPage from './pages/services/ServicesPage';
+
 // New modules
 import RisksPage                from './pages/risks/RisksPage';
 import BusinessIntelligencePage from './pages/bi/BusinessIntelligencePage';
@@ -48,8 +52,8 @@ import UsersPage        from './pages/admin/UsersPage';
 export default function App() {
   return (
     <Routes>
-      {/* ── Public landing page ───────────────────────────── */}
-      <Route path="/" element={<LandingPage />} />
+      {/* ── Public pages ─────────────────────────────────── */}
+      <Route path="/"         element={<LandingPage />} />
 
       {/* ── Guest routes ──────────────────────────────────── */}
       <Route path="/login" element={
@@ -74,7 +78,8 @@ export default function App() {
         <Route path="/contracts"      element={<ContractsPage />} />
         <Route path="/reports"        element={<ReportsPage />} />
         <Route path="/time"           element={<TimeEntriesPage />} />
-        <Route path="/documents"      element={<DocumentsPage />} />
+        <Route path="/documents"                  element={<DocumentsPage />} />
+        <Route path="/documents/analysis-result" element={<DocumentAnalysisResultPage />} />
         <Route path="/analysis"        element={<AnalysisPage />} />
         <Route path="/analysis/:id"   element={<AnalysisDetailPage />} />
         <Route path="/chat"           element={<ChatPage />} />
@@ -91,30 +96,31 @@ export default function App() {
             <CrmPage />
           </RoleGuard>
         } />
-        <Route path="/cashflow" element={<CashFlowPage />} />
+        <Route path="/cashflow"  element={<CashFlowPage />} />
+        <Route path="/services"  element={<ServicesPage />} />
 
         {/* ── Enterprise Feature Routes ──────────────────── */}
         <Route path="/client-portal"    element={<ClientPortalPage />} />
         <Route path="/milestones"       element={<MilestonesPage />} />
         <Route path="/settings/email-templates" element={
-          <RoleGuard allowedRoles={['Admin', 'SuperAdmin']}>
+          <RoleGuard allowedRoles={['SuperAdmin']}>
             <EmailTemplatesPage />
           </RoleGuard>
         } />
 
         {/* ── Admin-only routes ──────────────────────────── */}
         <Route path="/admin/companies" element={
-          <RoleGuard allowedRoles={['SuperAdmin', 'Admin']}>
+          <RoleGuard allowedRoles={['SuperAdmin']}>
             <CompaniesPage />
           </RoleGuard>
         } />
         <Route path="/admin/users" element={
-          <RoleGuard allowedRoles={['SuperAdmin', 'Admin']}>
+          <RoleGuard allowedRoles={['SuperAdmin']}>
             <UsersPage />
           </RoleGuard>
         } />
         <Route path="/admin/settings" element={
-          <RoleGuard allowedRoles={['SuperAdmin', 'Admin']}>
+          <RoleGuard allowedRoles={['SuperAdmin']}>
             <CompaniesPage />
           </RoleGuard>
         } />

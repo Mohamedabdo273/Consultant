@@ -1,10 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { analysisApi } from '../../api/index';
 import {
   BrainCircuit, TrendingUp, TrendingDown, Shield, Zap,
   CheckCircle2, AlertTriangle, Lightbulb, Target, FileUp,
   BarChart2, ArrowUpRight, ArrowDownRight, Minus,
-  ChevronRight, ChevronLeft, Upload, BarChart3,
+  ChevronRight, ChevronLeft, Upload, BarChart3, RefreshCw,
 } from 'lucide-react';
 import { dashboardApi } from '../../api/index';
 import { useLang } from '../../context/LangContext';
@@ -147,16 +150,81 @@ function SectionTitle({ icon: Icon, title, color = 'text-primary-600' }) {
   );
 }
 
+// ── Intake Modal ───────────────────────────────────────────────────────────────
+function IntakeModal({ onConfirm, onClose, isAnalyzing, ar }) {
+  const [form, setForm] = useState({
+    businessActivity: '', mainChallenge: '', analysisGoal: '',
+    annualRevenueRange: '', companyAge: '',
+  });
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const fields = [
+    { key: 'businessActivity',   label: ar ? 'نوع نشاط شركتك *' : 'Business Type *',          placeholder: ar ? 'مثال: مقاولات إنشائية / استشارات هندسية / تجارة' : 'e.g. Construction / Consulting', required: true },
+    { key: 'mainChallenge',      label: ar ? 'أكبر تحدٍ تواجهه الآن' : 'Main Challenge',       placeholder: ar ? 'مثال: ضعف التدفق النقدي / منافسة سعرية' : 'e.g. Cash flow / Competition' },
+    { key: 'analysisGoal',       label: ar ? 'ماذا تريد من التحليل؟' : 'Analysis Goal',        placeholder: ar ? 'مثال: تحديد فرص النمو / تقليل المخاطر' : 'e.g. Growth opportunities' },
+    { key: 'annualRevenueRange', label: ar ? 'نطاق الإيرادات السنوية' : 'Annual Revenue Range', placeholder: ar ? 'مثال: 1-5 مليون جنيه' : 'e.g. $1M-5M' },
+    { key: 'companyAge',         label: ar ? 'عمر الشركة' : 'Company Age',                     placeholder: ar ? 'مثال: 5 سنوات' : 'e.g. 5 years' },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div className="bg-[#1e3a5f] text-white rounded-t-2xl px-5 py-4">
+          <h3 className="font-bold text-base">{ar ? 'أخبر AI عن شركتك' : 'Tell AI About Your Business'}</h3>
+          <p className="text-xs text-blue-300 mt-0.5">{ar ? 'هذه البيانات تضمن تحليلاً دقيقاً يخص نشاطك الفعلي' : 'This ensures analysis matches your actual business'}</p>
+        </div>
+        <div className="p-5 space-y-3">
+          {fields.map(f => (
+            <div key={f.key}>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{f.label}</label>
+              <input
+                value={form[f.key]}
+                onChange={e => set(f.key, e.target.value)}
+                placeholder={f.placeholder}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="px-5 pb-5 flex gap-3">
+          <button onClick={onClose} className="flex-1 btn-secondary text-sm py-2">{ar ? 'إلغاء' : 'Cancel'}</button>
+          <button
+            onClick={() => onConfirm(form)}
+            disabled={!form.businessActivity.trim() || isAnalyzing}
+            className="flex-1 btn-primary text-sm py-2 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={isAnalyzing ? 'animate-spin' : ''} />
+            {isAnalyzing ? (ar ? 'جارٍ التحليل...' : 'Analyzing...') : (ar ? 'ابدأ التحليل' : 'Run Analysis')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AiDashboardPage() {
   const { lang, isRTL } = useLang();
   const ar = lang === 'ar';
   const ArrowIcon = isRTL ? ChevronLeft : ChevronRight;
+  const qc = useQueryClient();
+  const [showIntake, setShowIntake] = useState(false);
 
   const { data: raw, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['ai-dashboard'],
     queryFn: () => dashboardApi.get().then(r => r.data?.data ?? r.data),
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { mutate: runAnalysis, isPending: isAnalyzing } = useMutation({
+    mutationFn: (intake) => analysisApi.analyzeAll(intake),
+    onSuccess: () => {
+      toast.success(ar ? 'تم تحديث التحليل بنجاح' : 'Analysis updated successfully');
+      setShowIntake(false);
+      qc.invalidateQueries({ queryKey: ['ai-dashboard'] });
+      refetch();
+    },
+    onError: (e) => toast.error(e?.response?.data?.message ?? (ar ? 'فشل التحديث' : 'Update failed')),
   });
 
   if (isLoading) return <PageLoader />;
@@ -180,20 +248,38 @@ export default function AiDashboardPage() {
   const stats  = dash.statistics ?? {};
   const cmp    = kpi.comparison ?? {};
 
-  const overall = kpi.currentOverallScore;
-  const hasData = overall != null && overall > 0;
+  const overall  = kpi.currentOverallScore;
+  const hasData  = (dash.hasCompletedAnalysis === true) ||
+                   (dash.hasCompletedAnalysis == null && overall != null && overall > 0 &&
+                    (ana.totalRecommendations > 0 || (ana.topStrengths ?? []).length > 0));
+  const lastDate = dash.lastAnalysisDate
+    ? new Date(dash.lastAnalysisDate).toLocaleDateString(ar ? 'ar-EG' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' })
+    : null;
 
   // ── Empty state ───────────────────────────────────────────────────────────
   if (!hasData) return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <BrainCircuit size={22} className="text-primary-600" />
-        <h1 className="text-xl font-bold text-gray-900">{ar ? 'لوحة التحليل الذكي' : 'AI Analysis Dashboard'}</h1>
+    <>
+      {showIntake && <IntakeModal ar={ar} isAnalyzing={isAnalyzing} onClose={() => setShowIntake(false)} onConfirm={(intake) => runAnalysis(intake)} />}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BrainCircuit size={22} className="text-primary-600" />
+            <h1 className="text-xl font-bold text-gray-900">{ar ? 'لوحة التحليل الذكي' : 'AI Analysis Dashboard'}</h1>
+          </div>
+          <button
+            onClick={() => setShowIntake(true)}
+            disabled={isAnalyzing}
+            className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-60"
+          >
+            <RefreshCw size={13} className={isAnalyzing ? 'animate-spin' : ''} />
+            {isAnalyzing ? (ar ? 'جارٍ التحليل...' : 'Analyzing...') : (ar ? 'ابدأ التحليل الآن' : 'Run Analysis')}
+          </button>
+        </div>
+        <div className="card">
+          <EmptyAnalysis lang={lang} isRTL={isRTL} />
+        </div>
       </div>
-      <div className="card">
-        <EmptyAnalysis lang={lang} isRTL={isRTL} />
-      </div>
-    </div>
+    </>
   );
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
@@ -203,6 +289,15 @@ export default function AiDashboardPage() {
   const opportunities   = ana.opportunities ?? exec.keyOpportunities ?? [];
 
   return (
+    <>
+    {showIntake && (
+      <IntakeModal
+        ar={ar}
+        isAnalyzing={isAnalyzing}
+        onClose={() => setShowIntake(false)}
+        onConfirm={(intake) => runAnalysis(intake)}
+      />
+    )}
     <div className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ── Page header ── */}
@@ -215,13 +310,18 @@ export default function AiDashboardPage() {
           <p className="text-sm text-gray-500 mt-0.5">
             {ar ? 'نتائج تحليل مستنداتك بالذكاء الاصطناعي' : 'AI-powered insights from your documents'}
           </p>
+          {lastDate && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1.5 inline-block">
+              {ar ? `📅 آخر تحليل: ${lastDate}` : `📅 Last analysis: ${lastDate}`}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Link to="/documents" className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
             <Upload size={13} />
             {ar ? 'رفع مستندات' : 'Upload'}
           </Link>
-          <Link to="/analysis" className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
+          <Link to="/analysis" className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
             <BarChart3 size={13} />
             {ar ? 'سجل التحليلات' : 'History'}
             <ArrowIcon size={13} />
@@ -398,5 +498,6 @@ export default function AiDashboardPage() {
       )}
 
     </div>
+    </>
   );
 }
