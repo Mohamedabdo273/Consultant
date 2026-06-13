@@ -441,11 +441,11 @@ export default function TasksPage() {
   const headers = [
     lang === 'ar' ? 'المهمة' : 'Task',
     lang === 'ar' ? 'المشروع' : 'Project',
-    lang === 'ar' ? 'المُسند إليه' : 'Assignee',
+    lang === 'ar' ? 'عيّنه' : 'Assigned By',
+    lang === 'ar' ? 'المُسند إليه' : 'Assigned To',
     t('status'),
     lang === 'ar' ? 'الأولوية' : 'Priority',
     lang === 'ar' ? 'الاستحقاق' : 'Due Date',
-    lang === 'ar' ? 'الساعات' : 'Hours',
     t('actions'),
   ];
 
@@ -456,7 +456,7 @@ export default function TasksPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">{t('tasks')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {lang === 'ar' ? 'إدارة ومتابعة جميع المهام' : 'Manage and track all tasks'}
+            {lang === 'ar' ? 'مَن عيّن المهمة ← المُسند إليه' : 'Assigned By → Assigned To'}
           </p>
         </div>
         <button
@@ -551,12 +551,21 @@ export default function TasksPage() {
                     {task.projectName ?? task.project?.name ?? '—'}
                   </span>
                 </td>
-                {/* Assignee */}
+                {/* Assigned By */}
+                <td className="table-cell">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                    <User size={13} className="text-blue-400 flex-shrink-0" />
+                    <span className="truncate max-w-[100px]">
+                      {task.createdByName ?? '—'}
+                    </span>
+                  </div>
+                </td>
+                {/* Assigned To */}
                 <td className="table-cell">
                   <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                    <User size={13} className="text-gray-400 flex-shrink-0" />
+                    <User size={13} className="text-green-400 flex-shrink-0" />
                     <span className="truncate max-w-[100px]">
-                      {task.assigneeName ?? task.assignee?.fullName ?? '—'}
+                      {task.assigneeName ?? task.assignee?.fullName ?? (lang === 'ar' ? 'غير مُسند' : 'Unassigned')}
                     </span>
                   </div>
                 </td>
@@ -578,13 +587,6 @@ export default function TasksPage() {
                         {lang === 'ar' ? 'متأخر' : 'Overdue'}
                       </span>
                     )}
-                  </div>
-                </td>
-                {/* Hours */}
-                <td className="table-cell">
-                  <div className="flex items-center gap-1 text-sm text-gray-500">
-                    <Clock size={13} className="text-gray-400" />
-                    {task.estimatedHours != null ? `${task.estimatedHours}h` : '—'}
                   </div>
                 </td>
                 {/* Actions */}

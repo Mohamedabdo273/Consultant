@@ -68,90 +68,83 @@ function calcWeeklyMinutes(entries) {
 }
 
 // ── Live Timer Widget ─────────────────────────────────────────────────────────
-function TimerWidget({ activeEntry, onStart, onStop, isStarting, isStopping, lang }) {
+const TIMER_KEY = 'scg_timer_start';
+
+function TimerWidget({ onStop, lang }) {
+  const [startTs, setStartTs] = useState(() => {
+    const saved = localStorage.getItem(TIMER_KEY);
+    return saved ? Number(saved) : null;
+  });
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (!activeEntry) {
-      setElapsed(0);
-      return;
-    }
-    const startTs = new Date(activeEntry.startTime ?? activeEntry.start ?? '').getTime();
+    if (!startTs) { setElapsed(0); return; }
     const tick = () => setElapsed(Math.floor((Date.now() - startTs) / 1000));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [activeEntry]);
+  }, [startTs]);
+
+  const handleStart = () => {
+    const now = Date.now();
+    localStorage.setItem(TIMER_KEY, String(now));
+    setStartTs(now);
+  };
+
+  const handleStop = () => {
+    if (!startTs) return;
+    const hours = Math.max(0.25, Math.round((elapsed / 3600) * 4) / 4); // round to nearest 0.25
+    localStorage.removeItem(TIMER_KEY);
+    setStartTs(null);
+    setElapsed(0);
+    onStop(hours);
+  };
+
+  const isRunning = !!startTs;
 
   return (
     <div className="card p-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              activeEntry ? 'bg-green-100 animate-pulse' : 'bg-gray-100'
-            }`}
-          >
-            <Timer size={22} className={activeEntry ? 'text-green-600' : 'text-gray-400'} />
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isRunning ? 'bg-green-100 animate-pulse' : 'bg-gray-100'}`}>
+            <Timer size={22} className={isRunning ? 'text-green-600' : 'text-gray-400'} />
           </div>
           <div>
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-              {activeEntry
-                ? lang === 'ar'
-                  ? 'المؤقت يعمل'
-                  : 'Timer Running'
-                : lang === 'ar'
-                ? 'لا يوجد مؤقت نشط'
-                : 'No Active Timer'}
+              {isRunning
+                ? lang === 'ar' ? 'المؤقت يعمل' : 'Timer Running'
+                : lang === 'ar' ? 'لا يوجد مؤقت نشط' : 'No Active Timer'}
             </p>
             <p className="text-2xl font-mono font-bold text-gray-900">
-              {activeEntry ? formatDurationFromSecs(elapsed) : '00:00:00'}
+              {formatDurationFromSecs(elapsed)}
             </p>
-            {activeEntry && (
+            {isRunning && (
               <p className="text-xs text-gray-500 mt-0.5">
-                {lang === 'ar' ? 'بدأ في' : 'Started at'}{' '}
-                {formatTime(activeEntry.startTime ?? activeEntry.start)}
+                {lang === 'ar' ? 'بدأ في' : 'Started at'} {new Date(startTs).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
               </p>
             )}
           </div>
         </div>
-        <div className="sm:ms-auto flex items-center gap-2">
-          {activeEntry ? (
-            <button
-              onClick={() => onStop(activeEntry.id)}
-              disabled={isStopping}
-              className="btn-danger flex items-center gap-2 text-sm px-4 py-2"
-            >
-              {isStopping ? <Spinner size="sm" /> : <Square size={15} />}
-              {lang === 'ar' ? 'إيقاف' : 'Stop'}
+        <div className="sm:ms-auto">
+          {isRunning ? (
+            <button onClick={handleStop} className="btn-danger flex items-center gap-2 text-sm px-4 py-2">
+              <Square size={15} />
+              {lang === 'ar' ? 'إيقاف وحفظ' : 'Stop & Save'}
             </button>
           ) : (
-            <button
-              onClick={onStart}
-              disabled={isStarting}
-              className="btn-primary flex items-center gap-2 text-sm px-4 py-2"
-            >
-              {isStarting ? <Spinner size="sm" /> : <Play size={15} />}
+            <button onClick={handleStart} className="btn-primary flex items-center gap-2 text-sm px-4 py-2">
+              <Play size={15} />
               {lang === 'ar' ? 'بدء التسجيل' : 'Start Timer'}
             </button>
           )}
         </div>
       </div>
-      {activeEntry?.taskName && (
-        <div className="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-600 flex items-center gap-2">
-          <Clock size={14} className="text-green-500" />
-          <span className="font-medium">{activeEntry.taskName}</span>
-          {activeEntry.projectName && (
-            <span className="text-gray-400">· {activeEntry.projectName}</span>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
 // ── Create / Edit Modal ───────────────────────────────────────────────────────
-function TimeEntryModal({ open, onClose, entry }) {
+function TimeEntryModal({ open, onClose, entry, defaultHours }) {
   const { lang } = useLang();
   const queryClient = useQueryClient();
   const isEdit = !!entry;
@@ -172,14 +165,16 @@ function TimeEntryModal({ open, onClose, entry }) {
       reset(
         entry
           ? {
-              projectId: entry.projectId ?? '',
-              taskId: entry.taskId ?? '',
-              description: entry.description ?? '',
-              startTime: entry.startTime ? entry.startTime.slice(0, 16) : '',
-              endTime: entry.endTime ? entry.endTime.slice(0, 16) : '',
-              billable: entry.billable ?? false,
+              projectId:   entry.projectId   ?? '',
+              taskId:      entry.taskId       ?? '',
+              description: entry.description  ?? '',
+              hours:       entry.hours        ?? entry.Hours ?? '',
+              date:        entry.date         ? entry.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+              startTime:   entry.startTime    ? entry.startTime.slice(0, 16) : '',
+              endTime:     entry.endTime      ? entry.endTime.slice(0, 16)   : '',
+              billable:    entry.isBillable   ?? entry.billable ?? false,
             }
-          : { billable: true }
+          : { billable: true, date: new Date().toISOString().slice(0, 10), hours: defaultHours ?? '' }
       );
     }
   }, [open, entry, reset]);
@@ -400,6 +395,7 @@ export default function TimeEntriesPage() {
   const [dateTo, setDateTo] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
+  const [timerHours, setTimerHours] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const filters = {
@@ -441,8 +437,9 @@ export default function TimeEntriesPage() {
   const projects =
     projectsData?.items ?? projectsData?.projects ?? projectsData?.data ?? [];
 
+  // Backend لا يدعم timer حي — isRunning لا يُرسَل أبداً فلا يوجد entry نشط
   const activeEntry = allEntries.find(
-    (e) => e.isRunning || e.status === 'Running' || (!e.endTime && !e.stoppedAt)
+    (e) => e.isRunning === true || e.status === 'Running'
   );
 
   const weeklyMinutes = calcWeeklyMinutes(allEntries);
@@ -511,9 +508,7 @@ export default function TimeEntriesPage() {
     lang === 'ar' ? 'المشروع' : 'Project',
     lang === 'ar' ? 'المهمة' : 'Task',
     lang === 'ar' ? 'الوصف' : 'Description',
-    lang === 'ar' ? 'البداية' : 'Start',
-    lang === 'ar' ? 'النهاية' : 'End',
-    lang === 'ar' ? 'المدة' : 'Duration',
+    lang === 'ar' ? 'الساعات' : 'Hours',
     lang === 'ar' ? 'فوترة' : 'Billable',
     t('actions'),
   ];
@@ -544,11 +539,11 @@ export default function TimeEntriesPage() {
 
       {/* Timer Widget */}
       <TimerWidget
-        activeEntry={activeEntry}
-        onStart={startTimer}
-        onStop={stopTimer}
-        isStarting={isStarting}
-        isStopping={isStopping}
+        onStop={(hours) => {
+          setEditEntry(null);
+          setTimerHours(hours);
+          setModalOpen(true);
+        }}
         lang={lang}
       />
 
@@ -672,7 +667,7 @@ export default function TimeEntriesPage() {
               </td>
               <td className="table-cell">
                 <span className="text-sm text-gray-600">
-                  {entry.taskName ?? entry.task ?? '—'}
+                  {entry.taskTitle ?? entry.taskName ?? entry.task ?? '—'}
                 </span>
               </td>
               <td className="table-cell">
@@ -681,26 +676,14 @@ export default function TimeEntriesPage() {
                 </span>
               </td>
               <td className="table-cell">
-                <span className="text-sm text-gray-600">{formatTime(entry.startTime)}</span>
-              </td>
-              <td className="table-cell">
-                {entry.isRunning || entry.status === 'Running' ? (
-                  <span className="badge bg-green-100 text-green-700 animate-pulse">
-                    {lang === 'ar' ? 'يعمل' : 'Running'}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-600">{formatTime(entry.endTime)}</span>
-                )}
-              </td>
-              <td className="table-cell">
                 <span className="text-sm font-medium text-gray-900">
-                  {formatDuration(entry.duration ?? entry.durationMinutes)}
+                  {entry.hours != null ? formatDuration(entry.hours * 60) : '—'}
                 </span>
               </td>
               <td className="table-cell">
                 <div
                   className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                    entry.billable ? 'bg-green-100' : 'bg-gray-100'
+                    (entry.isBillable ?? entry.billable) ? 'bg-green-100' : 'bg-gray-100'
                   }`}
                 >
                   {entry.billable ? (
@@ -747,8 +730,10 @@ export default function TimeEntriesPage() {
         onClose={() => {
           setModalOpen(false);
           setEditEntry(null);
+          setTimerHours(null);
         }}
         entry={editEntry}
+        defaultHours={timerHours}
       />
 
       <ConfirmDialog

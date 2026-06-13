@@ -18,9 +18,10 @@ import {
   ThumbsDown,
   RefreshCw,
 } from 'lucide-react';
-import { invoicesApi, projectsApi, usersApi } from '../../api/index';
+import { invoicesApi, projectsApi, usersApi, adminApi } from '../../api/index';
 import { useLang } from '../../context/LangContext';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useAuth } from '../../context/AuthContext';
 import {
   Spinner,
   StatusBadge,
@@ -115,33 +116,51 @@ function ViewInvoiceModal({ invoice, open, onClose }) {
 // ── Create Invoice Modal ──────────────────────────────────────────────────────
 function CreateInvoiceModal({ open, onClose }) {
   const { lang } = useLang();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SuperAdmin';
   const queryClient = useQueryClient();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm({ defaultValues: { currency: 'USD' } });
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
 
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({ defaultValues: { currency: 'EGP' } });
+
+  // SuperAdmin: جلب كل الشركات
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies-dropdown'],
+    queryFn: async () => {
+      const r = await adminApi.getCompanies({ pageSize: 200 });
+      const raw = r.data?.data ?? r.data;
+      return Array.isArray(raw) ? raw : raw?.items ?? raw?.companies ?? raw?.data ?? [];
+    },
+    enabled: open && isSuperAdmin,
+    staleTime: 120_000,
+  });
+  const companies = Array.isArray(companiesData) ? companiesData : [];
+
+  // المشاريع — للـ SuperAdmin يمرر companyId للـ backend
   const { data: projectsData } = useQuery({
-    queryKey: ['projects-dropdown'],
-    queryFn: () => projectsApi.getAll({ pageSize: 100 }).then((r) => r.data?.data ?? r.data),
-    enabled: open,
+    queryKey: ['projects-dropdown', selectedCompanyId],
+    queryFn: () => projectsApi.getAll({
+      pageSize: 100,
+      ...(isSuperAdmin && selectedCompanyId ? { companyId: selectedCompanyId } : {}),
+    }).then((r) => r.data?.data ?? r.data),
+    enabled: open && (!isSuperAdmin || !!selectedCompanyId),
     staleTime: 120_000,
   });
   const projects = projectsData?.items ?? projectsData?.projects ?? projectsData?.data ?? [];
 
+  // المستخدمون — للـ SuperAdmin يمرر companyId، للـ Admin يشيل Admin/SuperAdmin
   const { data: clientsData } = useQuery({
-    queryKey: ['clients-dropdown'],
-    queryFn: () => usersApi.getAll({ pageSize: 200 }).then((r) => r.data?.data ?? r.data),
-    enabled: open,
+    queryKey: ['clients-dropdown', selectedCompanyId],
+    queryFn: () => usersApi.getAll({
+      pageSize: 200,
+      ...(isSuperAdmin && selectedCompanyId ? { companyId: selectedCompanyId } : {}),
+    }).then((r) => r.data?.data ?? r.data),
+    enabled: open && (!isSuperAdmin || !!selectedCompanyId),
     staleTime: 120_000,
   });
   const allUsers = clientsData?.items ?? clientsData?.users ?? clientsData?.data ?? (Array.isArray(clientsData) ? clientsData : []);
-  const filtered = allUsers.filter((u) =>
-    u.role?.toLowerCase() === 'client' || u.roles?.some?.((r) => r.toLowerCase() === 'client')
-  );
-  const clients = filtered.length > 0 ? filtered : allUsers;
+  // إزالة Admin و SuperAdmin من قائمة العملاء
+  const clients = allUsers.filter(u => !['Admin', 'SuperAdmin'].includes(u.role));
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data) => invoicesApi.create(data),
@@ -149,18 +168,19 @@ function CreateInvoiceModal({ open, onClose }) {
       toast.success(lang === 'ar' ? 'تم إنشاء الفاتورة' : 'Invoice created');
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       reset();
+      setSelectedCompanyId('');
       onClose();
     },
     onError: (err) => {
-      toast.error(
-        err?.response?.data?.message ||
-          (lang === 'ar' ? 'فشل إنشاء الفاتورة' : 'Failed to create invoice')
-      );
+      toast.error(err?.response?.data?.message || (lang === 'ar' ? 'فشل إنشاء الفاتورة' : 'Failed to create invoice'));
     },
   });
 
+  const handleClose = () => { reset(); setSelectedCompanyId(''); onClose(); };
+
   const onSubmit = (data) => {
     mutate({
+      ...(isSuperAdmin && selectedCompanyId ? { targetCompanyId: selectedCompanyId } : {}),
       projectId:         data.projectId         || undefined,
       clientUserId:      data.clientUserId       || undefined,
       currency:          data.currency           || 'EGP',
@@ -180,14 +200,37 @@ function CreateInvoiceModal({ open, onClose }) {
   return (
     <Modal
       open={open}
-      onClose={() => { reset(); onClose(); }}
+      onClose={handleClose}
       title={lang === 'ar' ? 'إنشاء فاتورة جديدة' : 'Create New Invoice'}
       size="lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* SuperAdmin: اختر الشركة أولاً */}
+          {isSuperAdmin && (
+            <div className="sm:col-span-2">
+              <FormField label={lang === 'ar' ? 'الشركة' : 'Company'} required>
+                <select
+                  className="input"
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                >
+                  <option value="">{lang === 'ar' ? 'اختر الشركة' : 'Select company'}</option>
+                  {companies.map((c) => (
+                    <option key={c.companyId ?? c.id} value={c.companyId ?? c.id}>{c.companyName ?? c.name}</option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+          )}
+
           <FormField label={lang === 'ar' ? 'العميل' : 'Client'} error={errors.clientUserId?.message}>
-            <select className="input" {...register('clientUserId', { required: lang === 'ar' ? 'العميل مطلوب' : 'Client required' })}>
+            <select
+              className="input"
+              disabled={isSuperAdmin && !selectedCompanyId}
+              {...register('clientUserId', { required: lang === 'ar' ? 'العميل مطلوب' : 'Client required' })}
+            >
               <option value="">{lang === 'ar' ? 'اختر عميل' : 'Select client'}</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>{c.fullName ?? c.name ?? c.email}</option>
@@ -196,7 +239,11 @@ function CreateInvoiceModal({ open, onClose }) {
           </FormField>
 
           <FormField label={lang === 'ar' ? 'المشروع' : 'Project'}>
-            <select className="input" {...register('projectId')}>
+            <select
+              className="input"
+              disabled={isSuperAdmin && !selectedCompanyId}
+              {...register('projectId')}
+            >
               <option value="">{lang === 'ar' ? 'اختر مشروع' : 'Select project'}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>

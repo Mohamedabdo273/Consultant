@@ -338,6 +338,7 @@ export const emailTemplatesApi = {
   create:  (data)     => api.post('/email-templates', data),
   update:  (id, data) => api.put(`/email-templates/${id}`, data),
   delete:  (id)       => api.delete(`/email-templates/${id}`),
+  send:    (id, dto)  => api.post(`/email-templates/${id}/send`, dto),
 };
 
 // ── Project Budget ────────────────────────────────────────────────────────────
@@ -434,6 +435,23 @@ export const biApi = {
 };
 
 // ── CRM ───────────────────────────────────────────────────────────────────────
+// ── Quality / Technical Sector ────────────────────────────────────────────────
+export const boqApi = {
+  // الحصر
+  getAll:       (params)    => api.get('/boq', { params }),
+  getById:      (id)        => api.get(`/boq/${id}`),
+  create:       (data)      => api.post('/boq', data),
+  update:       (id, data)  => api.put(`/boq/${id}`, data),
+  delete:       (id)        => api.delete(`/boq/${id}`),
+  getComparison:(id)        => api.get(`/boq/${id}/comparison`),
+  // المستخلصات
+  getCerts:     (params)    => api.get('/boq/certificates', { params }),
+  getCertById:  (id)        => api.get(`/boq/certificates/${id}`),
+  createCert:   (data)      => api.post('/boq/certificates', data),
+  updateCert:   (id, data)  => api.put(`/boq/certificates/${id}`, data),
+  deleteCert:   (id)        => api.delete(`/boq/certificates/${id}`),
+};
+
 export const crmApi = {
   getDashboard:        ()            => api.get('/crm/dashboard'),
   getClients:          ()            => api.get('/crm/clients'),
@@ -443,4 +461,67 @@ export const crmApi = {
   getInteractions:     (clientId)    => api.get(`/crm/clients/${clientId}/interactions`),
   addInteraction:      (data)        => api.post('/crm/interactions', data),
   deleteInteraction:   (id)          => api.delete(`/crm/interactions/${id}`),
+};
+
+
+export const procurementApi = {
+  // طلبات الاحتياج
+  getRequisitions:  (params)    => api.get('/procurement/requisitions', { params }),
+  getRequisition:   (id)        => api.get(`/procurement/requisitions/${id}`),
+  createRequisition:(data)      => api.post('/procurement/requisitions', data),
+  updateReqStatus:  (id, data)  => api.patch(`/procurement/requisitions/${id}/status`, data),
+  deleteRequisition:(id)        => api.delete(`/procurement/requisitions/${id}`),
+  // طلبات الشراء
+  getPurchases:     (params)    => api.get('/procurement/purchases', { params }),
+  getPurchase:      (id)        => api.get(`/procurement/purchases/${id}`),
+  createPurchase:   (data)      => api.post('/procurement/purchases', data),
+  updatePoStatus:   (id, data)  => api.patch(`/procurement/purchases/${id}/status`, data),
+  deletePurchase:   (id)        => api.delete(`/procurement/purchases/${id}`),
+  // أذونات الإضافة
+  getPermits:       (params)    => api.get('/procurement/permits', { params }),
+  getPermit:        (id)        => api.get(`/procurement/permits/${id}`),
+  createPermit:     (data)      => api.post('/procurement/permits', data),
+  confirmPermit:    (id)        => api.patch(`/procurement/permits/${id}/confirm`, {}),
+  deletePermit:     (id)        => api.delete(`/procurement/permits/${id}`),
+};
+
+export const warehouseApi = {
+  // كرت الصنف
+  getItems:     (params)    => api.get('/warehouse/items', { params }),
+  getItem:      (id)        => api.get(`/warehouse/items/${id}`),
+  createItem:   (data)      => api.post('/warehouse/items', data),
+  updateItem:   (id, data)  => api.put(`/warehouse/items/${id}`, data),
+  deleteItem:   (id)        => api.delete(`/warehouse/items/${id}`),
+  getSummary:   ()          => api.get('/warehouse/items/summary'),
+  // أذونات الصرف
+  getDisbursements:  (params) => api.get('/warehouse/disbursements', { params }),
+  getDisbursement:   (id)     => api.get(`/warehouse/disbursements/${id}`),
+  createDisbursement:(data)   => api.post('/warehouse/disbursements', data),
+  approveDisbursement:(id)    => api.patch(`/warehouse/disbursements/${id}/approve`, {}),
+  executeDisbursement:(id)    => api.patch(`/warehouse/disbursements/${id}/execute`, {}),
+  deleteDisbursement: (id)    => api.delete(`/warehouse/disbursements/${id}`),
+};
+
+export const qualityReportApi = {
+  getOverview:       ()     => api.get('/quality-reports/overview'),
+  getAnomalies:      ()     => api.get('/quality-reports/anomalies'),
+  getItemFlow:       ()     => api.get('/quality-reports/item-flow'),
+  generateIsoReport: (data) => api.post('/quality-reports/iso-report', data),
+  analyzeFraud:      ()     => api.post('/quality-reports/fraud-analysis'),
+  getDailySummary:   ()     => api.post('/quality-reports/daily-summary'),
+};
+
+export const boqAiApi = {
+  suggestPrice: (description, unit) =>
+    api.get('/boq/suggest-price', { params: { description, unit } }),
+};
+
+export const procurementAiApi = {
+  analyzeQuotePdf: (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post('/procurement/analyze-quote-pdf', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

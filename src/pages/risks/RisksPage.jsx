@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -94,9 +94,9 @@ function DecisionModal({ riskId, onClose }) {
           ) : d ? (
             <>
               {[
-                { key: 'optimistic', label: lang === 'ar' ? '🟢 المتفائل' : '🟢 Optimistic', color: 'bg-green-50 border-green-200' },
-                { key: 'realistic',  label: lang === 'ar' ? '🟡 الواقعي'  : '🟡 Realistic',  color: 'bg-yellow-50 border-yellow-200' },
-                { key: 'cautious',   label: lang === 'ar' ? '🔴 الحذر'    : '🔴 Cautious',   color: 'bg-red-50 border-red-200' },
+                { key: 'optimisticPath', label: lang === 'ar' ? '🟢 المتفائل' : '🟢 Optimistic', color: 'bg-green-50 border-green-200' },
+                { key: 'realisticPath',  label: lang === 'ar' ? '🟡 الواقعي'  : '🟡 Realistic',  color: 'bg-yellow-50 border-yellow-200' },
+                { key: 'cautiousPath',   label: lang === 'ar' ? '🔴 الحذر'    : '🔴 Cautious',   color: 'bg-red-50 border-red-200' },
               ].map(({ key, label, color }) => (
                 <div key={key} className={`border rounded-xl p-4 ${color}`}>
                   <p className="font-semibold mb-1">{label}</p>
@@ -166,24 +166,24 @@ function RiskModal({ risk, onClose }) {
           <div>
             <label className="block text-sm font-medium mb-1">{lbl('العنوان','Title')} *</label>
             <input {...register('title', { required: true })}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+              className="input" />
             {errors.title && <p className="text-red-500 text-xs mt-1">{lbl('مطلوب','Required')}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">{lbl('الوصف','Description')}</label>
             <textarea {...register('description')} rows={2}
-              className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary-500" />
+              className="input" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">{lbl('الاحتمالية','Probability')}</label>
-              <select {...register('probability')} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <select {...register('probability')} className="input">
                 {PROBS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{lbl('التأثير','Impact')}</label>
-              <select {...register('impact')} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <select {...register('impact')} className="input">
                 {IMPACTS.map(i => <option key={i} value={i}>{i}</option>)}
               </select>
             </div>
@@ -191,13 +191,13 @@ function RiskModal({ risk, onClose }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">{lbl('التصنيف','Category')}</label>
-              <select {...register('category')} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <select {...register('category')} className="input">
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{lbl('الحالة','Status')}</label>
-              <select {...register('status')} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <select {...register('status')} className="input">
                 {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -205,12 +205,12 @@ function RiskModal({ risk, onClose }) {
           <div>
             <label className="block text-sm font-medium mb-1">{lbl('خطة التخفيف','Mitigation Plan')}</label>
             <textarea {...register('mitigationPlan')} rows={2}
-              className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary-500" />
+              className="input" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">{lbl('المسؤول','Owner')}</label>
             <input {...register('owner')}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500" />
+              className="input" />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={isPending}
@@ -501,30 +501,34 @@ export default function RisksPage() {
                         <div className="flex items-center gap-1">
                           <button onClick={() => setEditRisk(r)}
                             title={lbl('عرض وتعديل بيانات المخاطرة', 'View & edit risk details')}
-                            className="p-1.5 hover:bg-gray-100 rounded-lg transition text-gray-500">
+                            className="flex flex-col items-center gap-0.5 px-2 py-1 hover:bg-gray-100 rounded-lg transition text-gray-500">
                             <Eye size={14} />
+                            <span className="text-[9px] leading-none">{lbl('عرض','View')}</span>
                           </button>
                           <button
                             disabled={assessingId === r.id}
                             onClick={() => { setAssessingId(r.id); assessMut.mutate(r.id); }}
                             title={lbl('تقييم بالذكاء الاصطناعي — يحلل المخاطرة ويحدّث درجتها تلقائياً', 'AI assessment — analyses risk & auto-updates score')}
-                            className="p-1.5 hover:bg-purple-50 rounded-lg transition text-purple-500 disabled:opacity-40 relative">
+                            className="flex flex-col items-center gap-0.5 px-2 py-1 hover:bg-purple-50 rounded-lg transition text-purple-500 disabled:opacity-40 relative">
                             {assessingId === r.id
                               ? <span className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin block" />
                               : <Brain size={14} />}
+                            <span className="text-[9px] leading-none">{lbl('تقييم AI','AI Assess')}</span>
                           </button>
                           <button onClick={() => setDecisionId(r.id)}
                             title={lbl('دعم القرار — 3 سيناريوهات (متفائل / واقعي / حذر) + توصية AI', 'Decision support — 3 scenarios + AI recommendation')}
-                            className="p-1.5 hover:bg-blue-50 rounded-lg transition text-blue-500">
+                            className="flex flex-col items-center gap-0.5 px-2 py-1 hover:bg-blue-50 rounded-lg transition text-blue-500">
                             <TrendingUp size={14} />
+                            <span className="text-[9px] leading-none">{lbl('دعم القرار','Decision')}</span>
                           </button>
                           <button onClick={() => {
                             if (confirm(lbl('حذف المخاطرة؟','Delete this risk?')))
                               deleteMut.mutate(r.id);
                           }}
                             title={lbl('حذف المخاطرة نهائياً', 'Permanently delete this risk')}
-                            className="p-1.5 hover:bg-red-50 rounded-lg transition text-red-400">
+                            className="flex flex-col items-center gap-0.5 px-2 py-1 hover:bg-red-50 rounded-lg transition text-red-400">
                             <Trash2 size={14} />
+                            <span className="text-[9px] leading-none">{lbl('حذف','Delete')}</span>
                           </button>
                         </div>
                       </td>

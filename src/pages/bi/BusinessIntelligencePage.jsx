@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -525,7 +525,7 @@ function ToolPanel({ tool, lang }) {
 
         {tool.fields.map((f) => (
           <div key={f.name}>
-            <label className="block text-sm font-medium mb-1">
+            <label className="label">
               {f.label} {f.required && <span className="text-red-500">*</span>}
             </label>
             {f.textarea ? (
@@ -533,13 +533,13 @@ function ToolPanel({ tool, lang }) {
                 {...register(f.name, { required: f.required })}
                 rows={3}
                 placeholder={f.placeholder}
-                className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="input"
               />
             ) : (
               <input
                 {...register(f.name, { required: f.required })}
                 placeholder={f.placeholder}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="input"
               />
             )}
             {errors[f.name] && <p className="text-red-500 text-xs mt-1">{lbl('هذا الحقل مطلوب','This field is required')}</p>}

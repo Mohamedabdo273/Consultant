@@ -13,7 +13,38 @@ const translations = {
     users: 'المستخدمين', company: 'الشركة',
     milestones: 'المراحل', clientPortal: 'بوابة العميل', emailTemplates: 'قوالب الإيميل',
     risks: 'إدارة المخاطر', businessIntelligence: 'ذكاء الأعمال', crm: 'إدارة العملاء', cashFlow: 'التدفق النقدي',
-    ourServices: 'خدماتنا',
+    ourServices: 'خدماتنا', boq: 'الحصر والمستخلصات',
+    // BOQ & Certificates
+    boqPage: 'الحصر', boqSubtitle: 'قوائم الكميات والأسعار',
+    boqNew: 'حصر جديد', boqNumber: 'رقم الحصر', boqTitle: 'عنوان الحصر',
+    boqDate: 'تاريخ الحصر', boqItems: 'بنود الحصر', boqAddItem: 'إضافة بند',
+    boqGrandTotal: 'الإجمالي الكلي', boqItemsCount: 'البنود',
+    boqEmpty: 'لا توجد حصور بعد',
+    boqEditTitle: 'تعديل الحصر', boqCreateTitle: 'حصر جديد',
+    itemCode: 'الكود', itemDesc: 'الوصف', itemUnit: 'الوحدة',
+    itemQty: 'الكمية', itemUnitPrice: 'سعر الوحدة', itemTotal: 'الإجمالي',
+    boqStatusDraft: 'مسودة', boqStatusApproved: 'معتمد', boqStatusClosed: 'مغلق',
+    // Certificates
+    certificates: 'المستخلصات', certNew: 'مستخلص جديد',
+    certNumber: 'رقم المستخلص', certTitle: 'عنوان المستخلص',
+    certType: 'نوع المستخلص', certOwner: 'مستخلص المالك',
+    certContractor: 'مستخلص المقاول', certPeriod: 'رقم الفترة',
+    certDate: 'تاريخ المستخلص', certBoq: 'الحصر المرجعي',
+    certExecutedQty: 'الكمية المنفذة', certBoqQty: 'كمية الحصر',
+    certCompletion: 'نسبة الإنجاز',
+    certEmpty: 'لا توجد مستخلصات بعد',
+    // Comparison
+    comparison: 'المقارنة', comparisonTitle: 'مقارنة الحصر بالمستخلصات',
+    compBoqTotal: 'إجمالي الحصر', compOwnerTotal: 'إجمالي المالك',
+    compContractorTotal: 'إجمالي المقاول', compVariance: 'الفرق',
+    alertOk: 'طبيعي', alertWarning: 'تحذير', alertCritical: 'حرج',
+    // Procurement / المشتريات
+    requisitions: 'طلبات الاحتياج', purchases: 'طلبات الشراء', additionPermits: 'أذونات الإضافة',
+    // Warehouse / المستودعات
+    warehouseItems: 'كرت الصنف', disbursements: 'أذونات الصرف',
+    // Quality Reports
+    qualityReports: 'تقارير الجودة',
+    project: 'المشروع', noProject: 'بدون مشروع',
     // Common
     save: 'حفظ', cancel: 'إلغاء', delete: 'حذف', edit: 'تعديل',
     add: 'إضافة', search: 'بحث', filter: 'تصفية', loading: 'جار التحميل...',
@@ -44,7 +75,38 @@ const translations = {
     users: 'Users', company: 'Company',
     milestones: 'Milestones', clientPortal: 'Client Portal', emailTemplates: 'Email Templates',
     risks: 'Risk Management', businessIntelligence: 'Business Intelligence', crm: 'CRM', cashFlow: 'Cash Flow',
-    ourServices: 'Our Services',
+    ourServices: 'Our Services', boq: 'BOQ & Certificates',
+    // BOQ & Certificates
+    boqPage: 'Bill of Quantities', boqSubtitle: 'Bills of Quantities & Prices',
+    boqNew: 'New BOQ', boqNumber: 'BOQ Number', boqTitle: 'BOQ Title',
+    boqDate: 'BOQ Date', boqItems: 'BOQ Items', boqAddItem: 'Add Item',
+    boqGrandTotal: 'Grand Total', boqItemsCount: 'Items',
+    boqEmpty: 'No BOQs yet',
+    boqEditTitle: 'Edit BOQ', boqCreateTitle: 'New BOQ',
+    itemCode: 'Code', itemDesc: 'Description', itemUnit: 'Unit',
+    itemQty: 'Quantity', itemUnitPrice: 'Unit Price', itemTotal: 'Total',
+    boqStatusDraft: 'Draft', boqStatusApproved: 'Approved', boqStatusClosed: 'Closed',
+    // Certificates
+    certificates: 'Certificates', certNew: 'New Certificate',
+    certNumber: 'Cert. Number', certTitle: 'Certificate Title',
+    certType: 'Certificate Type', certOwner: 'Owner Certificate',
+    certContractor: 'Contractor Certificate', certPeriod: 'Period No.',
+    certDate: 'Certificate Date', certBoq: 'Reference BOQ',
+    certExecutedQty: 'Executed Qty', certBoqQty: 'BOQ Qty',
+    certCompletion: 'Completion %',
+    certEmpty: 'No certificates yet',
+    // Comparison
+    comparison: 'Comparison', comparisonTitle: 'BOQ vs Certificates Comparison',
+    compBoqTotal: 'BOQ Total', compOwnerTotal: 'Owner Total',
+    compContractorTotal: 'Contractor Total', compVariance: 'Variance',
+    alertOk: 'OK', alertWarning: 'Warning', alertCritical: 'Critical',
+    project: 'Project', noProject: 'No Project',
+    // Procurement
+    requisitions: 'Requisitions', purchases: 'Purchases', additionPermits: 'Addition Permits',
+    // Warehouse
+    warehouseItems: 'Item Cards', disbursements: 'Disbursements',
+    // Quality Reports
+    qualityReports: 'Quality Reports',
     // Common
     save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit',
     add: 'Add', search: 'Search', filter: 'Filter', loading: 'Loading...',

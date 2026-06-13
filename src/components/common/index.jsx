@@ -84,15 +84,15 @@ export function Modal({ open, onClose, title, children, size = 'md' }) {
   const sizes = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-white rounded-2xl shadow-xl w-full ${sizes[size]} animate-slide-up max-h-[90vh] flex flex-col`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} animate-slide-up max-h-[90vh] flex flex-col`}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+          <h2 className="text-base font-bold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 text-lg transition-colors">
             ✕
           </button>
         </div>
-        <div className="overflow-y-auto flex-1 p-6">{children}</div>
+        <div className="overflow-y-auto flex-1 p-6 space-y-4">{children}</div>
       </div>
     </div>
   );
@@ -228,16 +228,21 @@ export function Table({ headers, children, loading, empty }) {
 }
 
 // ── Form Field ───────────────────────────────────────────────────────────────
-export function FormField({ label, error, required, children }) {
+export function FormField({ label, error, required, hint, children }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       {label && (
         <label className="label">
-          {label}{required && <span className="text-red-500 ms-0.5">*</span>}
+          {label}{required && <span className="text-red-500 ms-1">*</span>}
         </label>
       )}
       {children}
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {hint && !error && <p className="text-xs text-gray-400">{hint}</p>}
+      {error && (
+        <p className="text-xs text-red-600 flex items-center gap-1">
+          <span>⚠</span> {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -248,7 +253,7 @@ export function Select({ options, value, onChange, placeholder, className = '' }
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`input ${className}`}
+      className={`input appearance-none cursor-pointer ${className}`}
     >
       {placeholder && <option value="">{placeholder}</option>}
       {options.map(({ value: v, label }) => (

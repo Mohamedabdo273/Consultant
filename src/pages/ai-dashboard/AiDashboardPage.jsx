@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -181,7 +181,7 @@ function IntakeModal({ onConfirm, onClose, isAnalyzing, ar }) {
                 value={form[f.key]}
                 onChange={e => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input"
               />
             </div>
           ))}

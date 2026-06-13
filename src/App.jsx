@@ -45,6 +45,23 @@ import BusinessIntelligencePage from './pages/bi/BusinessIntelligencePage';
 import CrmPage                  from './pages/crm/CrmPage';
 import CashFlowPage             from './pages/cashflow/CashFlowPage';
 
+// Quality / Technical Sector
+import BoqPage          from './pages/quality/BoqPage';
+import BoqDetailPage    from './pages/quality/BoqDetailPage';
+import CertificatesPage from './pages/quality/CertificatesPage';
+
+// Procurement / المشتريات
+import RequisitionsPage    from './pages/procurement/RequisitionsPage';
+import PurchasesPage       from './pages/procurement/PurchasesPage';
+import AdditionPermitsPage from './pages/procurement/AdditionPermitsPage';
+
+// Warehouse / المستودعات
+import WarehouseItemsPage  from './pages/warehouse/WarehouseItemsPage';
+import DisbursementsPage   from './pages/warehouse/DisbursementsPage';
+
+// Quality Reports / تقارير الجودة
+import QualityReportPage   from './pages/quality/QualityReportPage';
+
 // Admin pages
 import CompaniesPage    from './pages/admin/CompaniesPage';
 import UsersPage        from './pages/admin/UsersPage';
@@ -99,6 +116,24 @@ export default function App() {
         <Route path="/cashflow"  element={<CashFlowPage />} />
         <Route path="/services"  element={<ServicesPage />} />
 
+        {/* ── Quality / Technical Sector ─────────────────── */}
+        <Route path="/quality/boq"              element={<BoqPage />} />
+        <Route path="/quality/boq/:id"          element={<BoqDetailPage />} />
+        <Route path="/quality/certificates"     element={<CertificatesPage />} />
+        <Route path="/quality/certificates/new" element={<CertificatesPage />} />
+
+        {/* ── Procurement / المشتريات ─────────────────────── */}
+        <Route path="/procurement/requisitions" element={<RequisitionsPage />} />
+        <Route path="/procurement/purchases"    element={<PurchasesPage />} />
+        <Route path="/procurement/permits"      element={<AdditionPermitsPage />} />
+
+        {/* ── Warehouse / المستودعات ──────────────────────── */}
+        <Route path="/warehouse/items"        element={<WarehouseItemsPage />} />
+        <Route path="/warehouse/disbursements" element={<DisbursementsPage />} />
+
+        {/* ── Quality Reports / تقارير الجودة ────────────── */}
+        <Route path="/quality/reports"         element={<QualityReportPage />} />
+
         {/* ── Enterprise Feature Routes ──────────────────── */}
         <Route path="/client-portal"    element={<ClientPortalPage />} />
         <Route path="/milestones"       element={<MilestonesPage />} />
@@ -115,7 +150,7 @@ export default function App() {
           </RoleGuard>
         } />
         <Route path="/admin/users" element={
-          <RoleGuard allowedRoles={['SuperAdmin']}>
+          <RoleGuard allowedRoles={['SuperAdmin', 'Admin']}>
             <UsersPage />
           </RoleGuard>
         } />

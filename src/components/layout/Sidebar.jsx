@@ -1,61 +1,135 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderKanban, CheckSquare, FileText,
-  FileSignature, BarChart3, Clock, Upload, BrainCircuit,
+  FileSignature, BarChart3, Upload, BrainCircuit,
   MessageSquare, Bell, Settings, LogOut, Users, Building2,
   ShieldCheck, ChevronLeft, ChevronRight, X, Sparkles,
   Target, UserCircle, Mail, ShieldAlert, TrendingUp, HeartHandshake, Banknote, Briefcase,
+  ClipboardList, FileSpreadsheet, FileCheck, ShoppingCart, PackageCheck,
+  Warehouse, ArrowUpFromLine,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
 import toast from 'react-hot-toast';
 
-const navItems = (role) => {
-  const base = [
-    { to: '/dashboard',    icon: LayoutDashboard, key: 'dashboard'   },
-    { to: '/ai-dashboard', icon: Sparkles,         key: 'aiDashboard' },
-    { to: '/projects',     icon: FolderKanban,    key: 'projects'    },
-    { to: '/tasks',       icon: CheckSquare,     key: 'tasks'     },
-    { to: '/invoices',    icon: FileText,        key: 'invoices'  },
-    { to: '/contracts',   icon: FileSignature,   key: 'contracts' },
-    { to: '/reports',     icon: BarChart3,       key: 'reports'   },
-    { to: '/time',        icon: Clock,           key: 'timeEntries'},
-    { to: '/documents',   icon: Upload,          key: 'documents' },
-    { to: '/analysis',    icon: BrainCircuit,    key: 'analysis'  },
-    { to: '/chat',        icon: MessageSquare,   key: 'chat'      },
-    { to: '/milestones',  icon: Target,          key: 'milestones'},
-    { to: '/risks',       icon: ShieldAlert,     key: 'risks'     },
-    { to: '/bi',          icon: TrendingUp,      key: 'businessIntelligence' },
-    { to: '/crm',         icon: HeartHandshake,  key: 'crm'       },
-    { to: '/cashflow',    icon: Banknote,        key: 'cashFlow'  },
-    { to: '/services',    icon: Briefcase,       key: 'ourServices'},
+// ── Nav structure ────────────────────────────────────────────────────────────
+
+const buildSections = (role, lang) => {
+  const ar = lang === 'ar';
+
+  // SuperAdmin: platform-only pages
+  if (role === 'SuperAdmin') return [
+    {
+      label: ar ? 'الرئيسية' : 'Main',
+      items: [
+        { to: '/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+        { to: '/chat',      icon: MessageSquare,   key: 'chat'      },
+      ],
+    },
+    {
+      label: ar ? 'الإدارة' : 'Admin',
+      items: [
+        { to: '/services',                icon: Briefcase,   key: 'ourServices'    },
+        { to: '/admin/companies',         icon: Building2,   key: 'company'        },
+        { to: '/admin/users',             icon: Users,       key: 'users'          },
+        { to: '/settings/email-templates',icon: Mail,        key: 'emailTemplates' },
+        { to: '/admin/settings',          icon: ShieldCheck, key: 'admin'          },
+      ],
+    },
   ];
 
-  const adminItems = [
-    { to: '/admin/companies',          icon: Building2,   key: 'company'        },
-    { to: '/admin/users',              icon: Users,       key: 'users'          },
-    { to: '/settings/email-templates', icon: Mail,        key: 'emailTemplates' },
-    { to: '/admin/settings',           icon: ShieldCheck, key: 'admin'          },
-  ];
-
-  if (role === 'SuperAdmin') return [...base, ...adminItems];
+  // Client: simplified portal
   if (role === 'Client') return [
-    { to: '/dashboard',    icon: LayoutDashboard, key: 'dashboard'    },
-    { to: '/client-portal',icon: UserCircle,      key: 'clientPortal' },
-    { to: '/projects',     icon: FolderKanban,    key: 'projects'     },
-    { to: '/invoices',     icon: FileText,        key: 'invoices'     },
-    { to: '/contracts',    icon: FileSignature,   key: 'contracts'    },
-    { to: '/chat',         icon: MessageSquare,   key: 'chat'         },
+    {
+      label: ar ? 'الرئيسية' : 'Main',
+      items: [
+        { to: '/dashboard',    icon: LayoutDashboard, key: 'dashboard'    },
+        { to: '/client-portal',icon: UserCircle,      key: 'clientPortal' },
+        { to: '/projects',     icon: FolderKanban,    key: 'projects'     },
+        { to: '/invoices',     icon: FileText,        key: 'invoices'     },
+        { to: '/contracts',    icon: FileSignature,   key: 'contracts'    },
+        { to: '/chat',         icon: MessageSquare,   key: 'chat'         },
+      ],
+    },
   ];
-  return base;
+
+  // Base sections (Admin + CompanyUser + Viewer)
+  const sections = [
+    {
+      label: ar ? 'الرئيسية' : 'Main',
+      items: [
+        { to: '/dashboard',    icon: LayoutDashboard, key: 'dashboard'   },
+        { to: '/chat',         icon: MessageSquare,   key: 'chat'        },
+        { to: '/ai-dashboard', icon: Sparkles,        key: 'aiDashboard' },
+      ],
+    },
+    {
+      label: ar ? 'المشاريع' : 'Projects',
+      items: [
+        { to: '/projects',   icon: FolderKanban, key: 'projects'   },
+        { to: '/tasks',      icon: CheckSquare,  key: 'tasks'      },
+        { to: '/milestones', icon: Target,       key: 'milestones' },
+        { to: '/risks',      icon: ShieldAlert,  key: 'risks'      },
+      ],
+    },
+    {
+      label: ar ? 'المالية' : 'Finance',
+      items: [
+        { to: '/invoices',  icon: FileText, key: 'invoices'  },
+        { to: '/cashflow',  icon: Banknote, key: 'cashFlow'  },
+      ],
+    },
+    {
+      label: ar ? 'القطاع الفني' : 'Technical',
+      items: [
+        { to: '/quality/boq',               icon: FileSpreadsheet, key: 'boqPage'         },
+        { to: '/quality/certificates',      icon: FileCheck,       key: 'certificates'    },
+        { to: '/procurement/requisitions',  icon: ClipboardList,   key: 'requisitions'    },
+        { to: '/procurement/purchases',     icon: ShoppingCart,    key: 'purchases'       },
+        { to: '/procurement/permits',       icon: PackageCheck,    key: 'additionPermits' },
+        { to: '/warehouse/items',           icon: Warehouse,       key: 'warehouseItems'  },
+        { to: '/warehouse/disbursements',   icon: ArrowUpFromLine, key: 'disbursements'   },
+        { to: '/quality/reports',           icon: BarChart3,       key: 'qualityReports'  },
+      ],
+    },
+    {
+      label: ar ? 'التقارير والتحليل' : 'Reports & Analysis',
+      items: [
+        { to: '/reports',   icon: BarChart3,    key: 'reports'              },
+        { to: '/bi',        icon: TrendingUp,   key: 'businessIntelligence' },
+        { to: '/analysis',  icon: BrainCircuit, key: 'analysis'             },
+        { to: '/documents', icon: Upload,        key: 'documents'           },
+      ],
+    },
+    {
+      label: ar ? 'أخرى' : 'Other',
+      items: [
+        { to: '/crm',      icon: HeartHandshake, key: 'crm'        },
+        { to: '/services', icon: Briefcase,      key: 'ourServices'},
+      ],
+    },
+  ];
+
+  // Admin extras: contracts + user management
+  if (role === 'Admin') {
+    sections[2].items.push({ to: '/contracts', icon: FileSignature, key: 'contracts' });
+    sections.push({
+      label: ar ? 'الإدارة' : 'Admin',
+      items: [{ to: '/admin/users', icon: Users, key: 'users' }],
+    });
+  }
+
+  return sections;
 };
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
   const { user, logout } = useAuth();
-  const { t, isRTL }    = useLang();
-  const navigate          = useNavigate();
+  const { t, lang, isRTL } = useLang();
+  const navigate             = useNavigate();
 
-  const items = navItems(user?.role);
+  const sections = buildSections(user?.role, lang);
 
   const handleLogout = async () => {
     await logout();
@@ -93,11 +167,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
             <img src="/scg-logo.png" alt="SCG" className="w-8 h-8 object-contain mx-auto" />
           )}
           <div className="flex items-center gap-1">
-            {/* Mobile close */}
             <button onClick={onMobileClose} className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
               <X size={18} />
             </button>
-            {/* Desktop collapse */}
             <button
               onClick={onToggle}
               className="hidden lg:flex p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
@@ -111,19 +183,40 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {items.map(({ to, icon: Icon, key }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onClick={onMobileClose}
-              className={({ isActive }) =>
-                `sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-2' : ''}`
-              }
-            >
-              <Icon size={18} className="flex-shrink-0" />
-              {!collapsed && <span className="truncate">{t(key)}</span>}
-            </NavLink>
+        <nav className="flex-1 overflow-y-auto py-2 px-2">
+          {sections.map((section, si) => (
+            <div key={si} className={si > 0 ? 'mt-1' : ''}>
+              {/* Section label — hidden when collapsed */}
+              {!collapsed && (
+                <p className={`
+                  px-2 pb-1 text-[10px] font-semibold tracking-widest uppercase select-none
+                  text-gray-400
+                  ${si > 0 ? 'pt-3 border-t border-gray-100 mt-1' : 'pt-1'}
+                `}>
+                  {section.label}
+                </p>
+              )}
+              {/* Divider when collapsed (except first section) */}
+              {collapsed && si > 0 && (
+                <div className="my-2 mx-2 border-t border-gray-100" />
+              )}
+
+              <div className="space-y-0.5">
+                {section.items.map(({ to, icon: Icon, key }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    onClick={onMobileClose}
+                    className={({ isActive }) =>
+                      `sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-2' : ''}`
+                    }
+                  >
+                    <Icon size={18} className="flex-shrink-0" />
+                    {!collapsed && <span className="truncate">{t(key)}</span>}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

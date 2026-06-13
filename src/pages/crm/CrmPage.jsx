@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -60,14 +60,14 @@ function AddInteractionModal({ clients, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b">
+        <div className="modal-header">
           <h2 className="font-bold text-lg">{lbl('تسجيل تفاعل','Log Interaction')}</h2>
           <button onClick={onClose}><X size={18} /></button>
         </div>
         <form onSubmit={handleSubmit(mutate)} className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">{lbl('العميل','Client')} *</label>
-            <select {...register('clientUserId', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm">
+            <label className="label">{lbl('العميل','Client')} *</label>
+            <select {...register('clientUserId', { required: true })} className="input">
               <option value="">{lbl('اختر عميل','Select client')}</option>
               {clients.map(c => <option key={c.userId} value={c.userId}>{c.fullName}</option>)}
             </select>
@@ -75,36 +75,36 @@ function AddInteractionModal({ clients, onClose }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">{lbl('النوع','Type')}</label>
-              <select {...register('type')} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <label className="label">{lbl('النوع','Type')}</label>
+              <select {...register('type')} className="input">
                 {INTERACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">{lbl('المشاعر','Sentiment')}</label>
-              <select {...register('sentiment')} className="w-full border rounded-lg px-3 py-2 text-sm">
+              <label className="label">{lbl('المشاعر','Sentiment')}</label>
+              <select {...register('sentiment')} className="input">
                 {SENTIMENTS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{lbl('الموضوع','Subject')} *</label>
+            <label className="label">{lbl('الموضوع','Subject')} *</label>
             <input {...register('subject', { required: true })}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500" />
+              className="input" />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{lbl('الملاحظات','Notes')}</label>
+            <label className="label">{lbl('الملاحظات','Notes')}</label>
             <textarea {...register('notes')} rows={3}
-              className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary-500" />
+              className="input" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">{lbl('التاريخ','Date')}</label>
-              <input type="date" {...register('interactionDate')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+              <label className="label">{lbl('التاريخ','Date')}</label>
+              <input type="date" {...register('interactionDate')} className="input" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">{lbl('تاريخ المتابعة','Follow-up')}</label>
-              <input type="date" {...register('followUpDate')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+              <label className="label">{lbl('تاريخ المتابعة','Follow-up')}</label>
+              <input type="date" {...register('followUpDate')} className="input" />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
@@ -149,7 +149,7 @@ function ClientProfileModal({ clientId, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b">
+        <div className="modal-header">
           <h2 className="font-bold text-lg">{lbl('ملف العميل','Client Profile')}</h2>
           <button onClick={onClose}><X size={18} /></button>
         </div>
@@ -249,7 +249,7 @@ function AiInsightsPanel({ onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b">
+        <div className="modal-header">
           <div className="flex items-center gap-2">
             <Brain size={18} className="text-purple-600" />
             <h2 className="font-bold text-lg">{lbl('رؤى SCG — المحفظة الكاملة','SCG Portfolio Insights')}</h2>
